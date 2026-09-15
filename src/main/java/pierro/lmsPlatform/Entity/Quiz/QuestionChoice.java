@@ -19,7 +19,7 @@ public class QuestionChoice {
     @Column(nullable = false)
     private String content;
     @ManyToOne
-    @JoinColumn(name = "id")
+    @JoinColumn(name = "id_question")
     private Question question;
     @Column(nullable = false)
     boolean isCorrect;

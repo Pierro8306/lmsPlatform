@@ -2,12 +2,13 @@ package pierro.lmsPlatform.Service;
 
 import jakarta.transaction.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import pierro.lmsPlatform.DTO.Request.ChangePasswordRequest;
+import org.springframework.stereotype.Service;
+import pierro.lmsPlatform.DTO.Request.Auth.ChangePasswordRequest;
 import pierro.lmsPlatform.Entity.Auth.User;
 import pierro.lmsPlatform.Repository.UserRepository;
 
-
-public class Auth {
+@Service
+public class AuthService {
     PasswordEncoder passwordEncoder;
     UserRepository userRepository;
 

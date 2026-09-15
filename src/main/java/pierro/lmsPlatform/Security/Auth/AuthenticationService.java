@@ -5,8 +5,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import pierro.lmsPlatform.DTO.Request.LoginRequest;
-import pierro.lmsPlatform.DTO.Response.LoginResponse;
+import pierro.lmsPlatform.DTO.Request.Auth.LoginRequest;
+import pierro.lmsPlatform.DTO.Response.Auth.LoginResponse;
 import pierro.lmsPlatform.Repository.UserRepository;
 import pierro.lmsPlatform.Security.Jwt.JwtService;
 
@@ -25,12 +25,12 @@ public class AuthenticationService {
         }
         if (passwordEncoder.matches(
                 loginRequest.getPassword(),
-                user.getPassword()))
+                user.get().getPassword()))
         {
-            System.out.println(user.getUsername()+" "+user.getRole().getName());
+            System.out.println(user.get().getUsername()+" "+user.get().getRole().getName());
             return new LoginResponse(
-                    user.getRole().getName(),
-                    jwtService.createToken(user)
+                    user.get().getRole().getName(),
+                    jwtService.createToken(user.get())
             );
         }
         return null;

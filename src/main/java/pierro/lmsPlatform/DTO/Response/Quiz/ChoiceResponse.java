@@ -1,4 +1,4 @@
-package pierro.lmsPlatform.DTO.Response;
+package pierro.lmsPlatform.DTO.Response.Quiz;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -6,10 +6,9 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Setter
-@Getter
 @AllArgsConstructor
 @NoArgsConstructor
-public class LoginResponse {
-    private String role;
-    private String token;
+public class ChoiceResponse {
+    private String content;
+    private boolean isCorrect;
 }

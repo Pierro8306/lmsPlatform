@@ -7,6 +7,10 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import pierro.lmsPlatform.Entity.Auth.User;
 
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Getter
@@ -19,10 +23,15 @@ public class Attempt {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
     private Long id;
+    private LocalDateTime dateTime;
+    private LocalTime useTime;
+    private Double points;
     @ManyToOne
-    @JoinColumn(name = "id")
+    @JoinColumn(name = "id_user")
     private User user;
     @ManyToOne
-    @JoinColumn(name = "id")
-    private Quizzes quizzes;
+    @JoinColumn(name = "id_quiz")
+    private Quiz quiz;
+    @OneToMany(mappedBy = "attempt", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Answer> answers = new HashSet<>();
 }

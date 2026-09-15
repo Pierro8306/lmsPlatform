@@ -19,7 +19,7 @@ public class User {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "id")
+    @JoinColumn(name = "id_role")
     private Role role;
 
     @Column(unique = true, nullable = false,columnDefinition = "VARCHAR(100)")

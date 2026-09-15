@@ -23,6 +23,6 @@ public class Course {
     private String title;
     private String description;
     @OneToMany
-    @JoinColumn(name = "id")
+    @JoinColumn(name = "id_lesson")
     private Set<Lesson> users = new HashSet<>();
 }

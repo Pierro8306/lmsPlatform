@@ -9,8 +9,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import pierro.lmsPlatform.DTO.Request.LoginRequest;
-import pierro.lmsPlatform.DTO.Response.LoginResponse;
+import pierro.lmsPlatform.DTO.Request.Auth.LoginRequest;
+import pierro.lmsPlatform.DTO.Response.Auth.LoginResponse;
 import pierro.lmsPlatform.DTO.Response.ResponseObject;
 import pierro.lmsPlatform.Security.Auth.AuthenticationService;
 
