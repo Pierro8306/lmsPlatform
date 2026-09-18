@@ -2,9 +2,7 @@ package pierro.lmsPlatform.Entity.Quiz;
 
 import jakarta.persistence.*;
 import lombok.Data;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import pierro.lmsPlatform.Entity.Auth.User;
 
 import java.time.LocalDateTime;
@@ -13,8 +11,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Entity
-@Getter
-@Setter
 @Data
 @NoArgsConstructor
 @Table(name = "Attempts")

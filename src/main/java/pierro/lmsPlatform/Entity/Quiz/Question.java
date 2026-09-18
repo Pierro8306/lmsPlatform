@@ -23,6 +23,6 @@ public class Question {
     private String content;
     @Column(nullable = false)
     private String subject;
-    @OneToMany(mappedBy = "id_question", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<QuestionChoice> questionChoices = new HashSet<>();
 }

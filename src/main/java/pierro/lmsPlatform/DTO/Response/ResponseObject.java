@@ -1,13 +1,8 @@
 package pierro.lmsPlatform.DTO.Response;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.Data;
 
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
+@Data
 public class ResponseObject {
     private String status;
     private String message;

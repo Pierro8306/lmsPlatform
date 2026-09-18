@@ -1,8 +1,8 @@
 package pierro.lmsPlatform.DTO.Request.Auth;
 
-import lombok.Getter;
+import lombok.Data;
 
-@Getter
+@Data
 
 public class LoginRequest {
     private String username;

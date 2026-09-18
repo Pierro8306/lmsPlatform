@@ -3,13 +3,9 @@ package pierro.lmsPlatform.Entity.Auth;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import lombok.Data;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Entity
-@Getter
-@Setter
 @Data
 @NoArgsConstructor
 @Table(name = "Users")

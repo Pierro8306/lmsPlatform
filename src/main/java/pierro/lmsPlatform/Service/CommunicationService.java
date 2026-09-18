@@ -1,5 +1,6 @@
 package pierro.lmsPlatform.Service;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pierro.lmsPlatform.Entity.Auth.User;
@@ -16,11 +17,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class CommunicationService {
-    EventRepository eventRepository;
-    MemberRepository memberRepository;
-    NotificationRepository notificationRepository;
-    UserRepository userRepository;
+    private final EventRepository eventRepository;
+    private final MemberRepository memberRepository;
+    private final NotificationRepository notificationRepository;
+    private final UserRepository userRepository;
 
     public void createNotification(String title, String description) {
         Notification notification = new Notification();

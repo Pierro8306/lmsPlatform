@@ -1,12 +1,9 @@
 package pierro.lmsPlatform.DTO.Response.Auth;
 
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.Data;
 
-@Setter
-@AllArgsConstructor
-@NoArgsConstructor
+
+@Data
 public class LoginResponse {
     private String role;
     private String token;
