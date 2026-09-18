@@ -1,11 +1,13 @@
 package pierro.lmsPlatform.Entity.Quiz;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @Table(name = "QuestionChoices")
 public class QuestionChoice {
@@ -14,7 +16,7 @@ public class QuestionChoice {
     private Long id;
     @Column(nullable = false)
     private String content;
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_question")
     private Question question;
     @Column(nullable = false)

@@ -1,11 +1,13 @@
 package pierro.lmsPlatform.Entity.Communication;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @Table(name = "Notification")
 public class Notification {

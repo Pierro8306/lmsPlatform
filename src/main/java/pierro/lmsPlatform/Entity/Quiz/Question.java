@@ -1,7 +1,6 @@
 package pierro.lmsPlatform.Entity.Quiz;
 
 import jakarta.persistence.*;
-import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -12,7 +11,6 @@ import java.util.Set;
 @Entity
 @Getter
 @Setter
-@Data
 @NoArgsConstructor
 @Table(name = "Questions")
 public class Question {

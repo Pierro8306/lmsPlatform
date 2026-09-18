@@ -1,13 +1,14 @@
 package pierro.lmsPlatform.Entity.Project;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import pierro.lmsPlatform.Entity.Auth.User;
-import pierro.lmsPlatform.Entity.Quiz.Attempt;
 
 @Entity
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @Table(name = "ProjectSubmissions")
 public class ProjectSubmission {
@@ -18,10 +19,10 @@ public class ProjectSubmission {
     private String status;
     private String score;
     private String feedback;
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_user")
     private User user;
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_project")
     private Project project;
 }

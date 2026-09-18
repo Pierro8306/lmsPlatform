@@ -1,8 +1,9 @@
 package pierro.lmsPlatform.Entity.Quiz;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import pierro.lmsPlatform.Entity.Auth.User;
 
 import java.time.LocalDateTime;
@@ -11,7 +12,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Entity
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @Table(name = "Attempts")
 public class Attempt {
@@ -22,10 +24,10 @@ public class Attempt {
     private LocalDateTime dateTime;
     private LocalTime useTime;
     private Double points;
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_user")
     private User user;
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_quiz")
     private Quiz quiz;
     @OneToMany(mappedBy = "attempt", cascade = CascadeType.ALL, orphanRemoval = true)

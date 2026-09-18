@@ -1,16 +1,17 @@
 package pierro.lmsPlatform.Entity.Project;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
-import pierro.lmsPlatform.Entity.Quiz.Answer;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
 @Entity
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @Table(name = "Projects")
 public class Project {
