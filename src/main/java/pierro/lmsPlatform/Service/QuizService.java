@@ -18,8 +18,9 @@ import pierro.lmsPlatform.DTO.Response.Quiz.QuestionResponse;
 import pierro.lmsPlatform.Entity.Auth.User;
 import pierro.lmsPlatform.Entity.Quiz.*;
 import pierro.lmsPlatform.Mapper.ChoiceMapper;
-import pierro.lmsPlatform.Repository.*;
+import pierro.lmsPlatform.Repository.Auth.UserRepository;
 import pierro.lmsPlatform.Repository.Quiz.*;
+import pierro.lmsPlatform.Security.Crypto.IdObfuscator;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -36,6 +37,7 @@ public class QuizService {
     private final AttemptRepository attemptRepository;
     private final ChoiceMapper choiceMapper;
     private final ChatClient chatClient;
+    private final IdObfuscator idObfuscator;
 
     @Transactional
     private Question createQuestion(QuestionRequest questionRequest) {
@@ -46,16 +48,15 @@ public class QuizService {
         List<QuestionChoice> questionChoices = new ArrayList<>();
         for (Choice choiceDto : questionRequest.getChoices()) {
             QuestionChoice choice = new QuestionChoice();
-
             choice.setContent(choiceDto.getAnswerText());
             choice.setCorrect(choiceDto.isCorrect());
-
             choice.setQuestion(question);
             questionChoices.add(choice);
         }
         questionChoiceRepository.saveAll(questionChoices);
         return question;
     }
+
     @Transactional
     public void createQuiz(List<QuestionRequest> questionRequests, String title, String description, LocalDateTime startDate, LocalDateTime endDate, LocalTime timeLimit) {
         Quiz quiz = new Quiz();
@@ -71,14 +72,31 @@ public class QuizService {
         quizRepository.save(quiz);
     }
 
-    public QuestionResponse getQuestionById(Long questionId) {
+    public List<Quiz> getAllQuizzes() {
+        return quizRepository.findAll();
+    }
+
+    public Quiz getQuizById(String quizIdH) {
+        Long quizId = idObfuscator.decode(quizIdH);
+        return quizRepository.findById(quizId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy bài thi"));
+    }
+
+    public QuestionResponse getQuestionById(String questionIdH) {
+        Long questionId = idObfuscator.decode(questionIdH);
         Question question = questionRepository.findById(questionId)
                 .orElseThrow(() -> new RuntimeException("Question not found"));
 
         List<QuestionChoice> choices = questionChoiceRepository.findByQuestionId(question.getId());
+        List<QuestionChoice> modifiableChoices = new ArrayList<>(choices);
+        Collections.shuffle(modifiableChoices);
 
-        Collections.shuffle(choices);
-        return new QuestionResponse(question.getContent(),question.getSubject(), choiceMapper.entityToDTO(choices));
+        return new QuestionResponse(
+                questionIdH,
+                question.getContent(),
+                question.getSubject(),
+                choiceMapper.toStudentDtoList(modifiableChoices)
+        );
     }
 
     public List<QuestionChoice> getCorrectChoices(List<Answer> answers) {
@@ -94,15 +112,11 @@ public class QuizService {
         return correctChoices;
     }
 
-    public int countCorrectAnswer(List<QuizAnswer> quizAnswers){
-        if (quizAnswers == null || quizAnswers.isEmpty()) {
-            return 0;
-        }
-        return quizAnswers.size();
-    }
     @Transactional
-    public void handleAnswer(List<QuizAnswer> quizAnswers, LocalTime localTime, Long quizId, Long userId) {
-        User user = userRepository.findById(userId)
+    public void handleAnswer(List<QuizAnswer> quizAnswers, LocalTime localTime, String quizIdH, Long currentUserId) {
+        Long quizId = idObfuscator.decode(quizIdH);
+
+        User user = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         Quiz quiz = quizRepository.findById(quizId)
                 .orElseThrow(() -> new RuntimeException("Quiz not found"));
@@ -112,7 +126,6 @@ public class QuizService {
         attempt.setQuiz(quiz);
         attempt.setDateTime(LocalDateTime.now());
         attempt.setUseTime(localTime);
-
         attempt = attemptRepository.save(attempt);
 
         List<Answer> answers = new ArrayList<>();
@@ -123,10 +136,8 @@ public class QuizService {
                 Answer answer = new Answer();
                 answer.setAttempt(attempt);
 
-                Question question = questionRepository.findById(qa.getId_question())
-                        .orElse(null);
-                QuestionChoice choice = questionChoiceRepository.findById(qa.getId_answer())
-                        .orElse(null);
+                Question question = questionRepository.findById(idObfuscator.decode(qa.getId_question())).orElse(null);
+                QuestionChoice choice = questionChoiceRepository.findById(idObfuscator.decode(qa.getId_answer())).orElse(null);
 
                 answer.setQuestion(question);
                 answer.setQuestionChoice(choice);
@@ -134,7 +145,6 @@ public class QuizService {
                 if (choice != null && choice.isCorrect()) {
                     correctCount++;
                 }
-
                 answers.add(answer);
             }
             answerRepository.saveAll(answers);
@@ -144,35 +154,34 @@ public class QuizService {
         attempt.setAnswers(new HashSet<>(answers));
         attemptRepository.save(attempt);
     }
-    public List<ExamResult> getExamResult(Long quizId, Long userId) {
+
+    public List<ExamResult> getExamResult(String quizIdH, Long currentUserId) {
+        Long quizId = idObfuscator.decode(quizIdH);
         List<ExamResult> examResults = new ArrayList<>();
-        List<Attempt> attempts = attemptRepository.findAllByQuiz_IdAndUser_Id(quizId, userId);
+
+        List<Attempt> attempts = attemptRepository.findAllByQuiz_IdAndUser_Id(quizId, currentUserId);
 
         for (Attempt attempt : attempts) {
             List<Answer> answerList = new ArrayList<>(attempt.getAnswers());
-
             List<QuestionChoice> correctChoices = getCorrectChoices(answerList);
-
             List<QuizAnswer> quizAnswers = new ArrayList<>();
             for (QuestionChoice choice : correctChoices) {
-                quizAnswers.add(new QuizAnswer(choice.getQuestion().getId(), choice.getId()));
+                quizAnswers.add(new QuizAnswer(idObfuscator.encode(choice.getQuestion().getId()), idObfuscator.encode(choice.getId())));
             }
-
             examResults.add(new ExamResult(attempt.getPoints(), quizAnswers));
         }
 
         return examResults;
     }
-    public List<QuestionRequest> extractQuestions(MultipartFile file) throws Exception {
 
+    public List<QuestionRequest> extractQuestions(MultipartFile file) throws Exception {
         String pdfText = "";
         try (PDDocument document = Loader.loadPDF(file.getBytes())) {
             PDFTextStripper stripper = new PDFTextStripper();
             pdfText = stripper.getText(document);
         }
 
-        var converter = new BeanOutputConverter<>(new ParameterizedTypeReference<List<QuestionRequest>>() {
-        });
+        var converter = new BeanOutputConverter<>(new ParameterizedTypeReference<List<QuestionRequest>>() {});
 
         String prompt = """
                 Bạn là hệ thống trích xuất dữ liệu đề thi tự động. Hãy đọc văn bản sau và bóc tách thành danh sách câu hỏi trắc nghiệm.

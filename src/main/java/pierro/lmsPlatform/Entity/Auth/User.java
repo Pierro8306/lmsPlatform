@@ -20,11 +20,15 @@ public class User {
     @JoinColumn(name = "id_role")
     private Role role;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_user_group")
+    private UserGroup userGroup;
+
     @Column(unique = true, nullable = false,columnDefinition = "VARCHAR(100)")
     private String username;
     @Email
     private String email;
-    @Column(nullable = false,columnDefinition = "VARCHAR(10)")
+    @Column(nullable = false)
     private String password;
 
 }

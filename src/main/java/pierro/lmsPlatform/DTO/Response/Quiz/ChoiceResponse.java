@@ -9,6 +9,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ChoiceResponse {
+    private String id;
     private String content;
     private boolean isCorrect;
 }

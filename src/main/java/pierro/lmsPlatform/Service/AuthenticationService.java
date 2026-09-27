@@ -1,26 +1,27 @@
-package pierro.lmsPlatform.Security.Auth;
+package pierro.lmsPlatform.Service;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import pierro.lmsPlatform.DTO.Request.Auth.ChangePasswordRequest;
 import pierro.lmsPlatform.DTO.Request.Auth.LoginRequest;
 import pierro.lmsPlatform.DTO.Response.Auth.LoginResponse;
-import pierro.lmsPlatform.Repository.UserRepository;
+import pierro.lmsPlatform.Entity.Auth.User;
+import pierro.lmsPlatform.Repository.Auth.UserRepository;
 import pierro.lmsPlatform.Security.Jwt.JwtService;
 
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class AuthenticationService {
-    UserRepository userRepository;
-    JwtService jwtService;
-    PasswordEncoder passwordEncoder;
-    LoginRequest loginRequest;
+    private final UserRepository userRepository;
+    private final JwtService jwtService;
+    private final PasswordEncoder passwordEncoder;
     public LoginResponse authenticate(LoginRequest loginRequest) {
         var user = userRepository.findByUsername(loginRequest.getUsername());
-        if (user == null) {
+        if (user.isEmpty()) {
             return null;
         }
         if (passwordEncoder.matches(
@@ -34,5 +35,16 @@ public class AuthenticationService {
             );
         }
         return null;
+    }
+    public void changePassword(Long userId, ChangePasswordRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
+            return;
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
     }
 }

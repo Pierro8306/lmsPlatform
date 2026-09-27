@@ -13,6 +13,7 @@ import pierro.lmsPlatform.Entity.Learning.Lesson;
 import pierro.lmsPlatform.Mapper.LessonMapper;
 import pierro.lmsPlatform.Repository.Learning.CourseRepository;
 import pierro.lmsPlatform.Repository.Learning.LessonRepository;
+import pierro.lmsPlatform.Security.Crypto.IdObfuscator;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,6 +25,7 @@ public class LearningService {
     private final CourseRepository courseRepository;
     private final LessonRepository lessonRepository;
     private final LessonMapper lessonMapper;
+    private final IdObfuscator idObfuscator;
 
     public void createLesson(CreateLessonDto createLessonDto) {
         Lesson lesson = new Lesson();
@@ -33,7 +35,10 @@ public class LearningService {
         lesson.setVideo_url(createLessonDto.getVideo_url());
         lessonRepository.save(lesson);
     }
-    public void AddLesson(Long courseId, Long lessonId) {
+
+    public void addLesson(String courseIdH, String lessonIdH) {
+        Long courseId = idObfuscator.decode(courseIdH);
+        Long lessonId = idObfuscator.decode(lessonIdH);
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new RuntimeException("Course not found"));
         Lesson lesson = lessonRepository.findById(lessonId)
@@ -41,41 +46,57 @@ public class LearningService {
         lesson.setCourse(course);
         lessonRepository.save(lesson);
     }
-    public void CreateCourse(CreateCourseDto createCourseDto) {
+
+    // Sửa chữ C viết hoa thành c thường
+    public void createCourse(CreateCourseDto createCourseDto) {
         Course course = new Course();
         course.setTitle(createCourseDto.getTitle());
         course.setDescription(createCourseDto.getDescription());
         courseRepository.save(course);
     }
-    public void DeleteCourse(Long courseId) {
+
+    public void deleteCourse(String courseIdH) {
+        Long courseId = idObfuscator.decode(courseIdH);
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new RuntimeException("Course not found"));
-        lessonRepository.deleteById(courseId);
+        lessonRepository.deleteByCourseId(courseId);
+        courseRepository.delete(course);
     }
-    public void DeleteLesson(Long lessonId) {
+
+    public void deleteLesson(String lessonIdH) {
+        Long lessonId = idObfuscator.decode(lessonIdH);
+        Lesson lesson = lessonRepository.findById(lessonId)
+                .orElseThrow(() -> new RuntimeException("Lesson not found"));
         lessonRepository.deleteById(lessonId);
     }
-    public List<CourseSummaryDto> SeeAllCourse() {
+
+    public List<CourseSummaryDto> seeAllCourse() {
         List<Course> courseList = courseRepository.findAll();
         List<CourseSummaryDto> courseSummaryDtoList = new ArrayList<>();
         for (Course course : courseList) {
             CourseSummaryDto courseSummaryDto = new CourseSummaryDto();
+            courseSummaryDto.setId(idObfuscator.encode(course.getId()));
             courseSummaryDto.setTitle(course.getTitle());
             courseSummaryDto.setDescription(course.getDescription());
             courseSummaryDtoList.add(courseSummaryDto);
         }
         return courseSummaryDtoList;
     }
-    public CourseDetailDto  SeeCourseDetail(Long courseId) {
+
+    public CourseDetailDto seeCourseDetail(String courseIdH) {
+        Long courseId = idObfuscator.decode(courseIdH);
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new RuntimeException("Course not found"));
         CourseDetailDto courseDetailDto = new CourseDetailDto();
+        courseDetailDto.setId(idObfuscator.encode(courseId));
         courseDetailDto.setTitle(course.getTitle());
         courseDetailDto.setDescription(course.getDescription());
         courseDetailDto.setLessons(lessonMapper.entityToDTO(new ArrayList<>(course.getLessons())));
         return courseDetailDto;
     }
-    public LessonDetailDto SeeLessonDetail(Long lessonId) {
+
+    public LessonDetailDto seeLessonDetail(String lessonIdH) {
+        Long lessonId = idObfuscator.decode(lessonIdH);
         Lesson lesson = lessonRepository.findById(lessonId)
                 .orElseThrow(() -> new RuntimeException("Lesson not found"));
         LessonDetailDto lessonDetailDto = new LessonDetailDto();

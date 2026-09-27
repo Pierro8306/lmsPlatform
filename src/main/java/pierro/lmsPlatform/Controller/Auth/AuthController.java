@@ -1,4 +1,5 @@
-package pierro.lmsPlatform.Controller.Common;
+package pierro.lmsPlatform.Controller.Auth;
+
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -12,8 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import pierro.lmsPlatform.DTO.Request.Auth.LoginRequest;
 import pierro.lmsPlatform.DTO.Response.Auth.LoginResponse;
 import pierro.lmsPlatform.DTO.Response.ResponseObject;
-import pierro.lmsPlatform.Security.Auth.AuthenticationService;
-
+import pierro.lmsPlatform.Service.AuthenticationService;
 
 @RestController
 @RequiredArgsConstructor

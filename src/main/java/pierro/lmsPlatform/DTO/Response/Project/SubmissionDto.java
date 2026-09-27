@@ -3,6 +3,7 @@ package pierro.lmsPlatform.DTO.Response.Project;
 import java.time.LocalDateTime;
 
 public class SubmissionDto {
+    private String id;
     private String userName;
     private String github_url;
     private LocalDateTime submittedAt;

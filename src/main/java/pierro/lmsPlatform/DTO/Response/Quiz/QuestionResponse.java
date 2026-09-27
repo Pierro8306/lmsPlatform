@@ -10,7 +10,8 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class QuestionResponse {
+    private String id;
     private String content;
     private String subject;
-    List<ChoiceResponse> choiceResponses;
+    private List<StudentChoiceResponse> choices;
 }

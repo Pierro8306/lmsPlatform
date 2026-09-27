@@ -5,6 +5,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j; // Thêm Log
+import org.jspecify.annotations.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -14,6 +16,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.List;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtFilter extends OncePerRequestFilter {
@@ -23,8 +26,8 @@ public class JwtFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(
             HttpServletRequest request,
-            HttpServletResponse response,
-            FilterChain filterChain
+            @NonNull HttpServletResponse response,
+            @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
 
         String authHeader = request.getHeader("Authorization");
@@ -32,33 +35,34 @@ public class JwtFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
             return;
         }
-        String token = authHeader.substring(7);
-        try {
-            String username = jwtService.extractUsername(token);
-            String role = jwtService.extractRole(token);
-            System.out.println("URI = " + request.getRequestURI());
-            System.out.println("USERNAME = " + username);
-            System.out.println("ROLE FROM TOKEN = " + role);
-            System.out.println("AUTHORITY = ROLE_" + role);
 
-            if (username != null &&
-                    SecurityContextHolder.getContext().getAuthentication() == null) {
-                var authorities = List.of(
-                        new SimpleGrantedAuthority("ROLE_" + role)
-                );
-                var authentication =
-                        new UsernamePasswordAuthenticationToken(
-                                username,
-                                null,
-                                authorities
-                        );
-                SecurityContextHolder
-                        .getContext()
-                        .setAuthentication(authentication);
+        String token = authHeader.substring(7);
+
+        try {
+            if (jwtService.validateToken(token)) {
+
+                Long userId = jwtService.extractUserId(token);
+                String role = jwtService.extractRole(token);
+
+                if (userId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                    var authorities = List.of(new SimpleGrantedAuthority("ROLE_" + role));
+
+                    var authentication = new UsernamePasswordAuthenticationToken(
+                            userId,
+                            null,
+                            authorities
+                    );
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                }
+            } else {
+                log.warn("Unauthorized request to {} - Invalid token", request.getRequestURI());
+                SecurityContextHolder.clearContext();
             }
         } catch (Exception e) {
+            log.error("Cannot set user authentication", e);
             SecurityContextHolder.clearContext();
         }
+
         filterChain.doFilter(request, response);
     }
 }

@@ -1,4 +1,4 @@
-package pierro.lmsPlatform.Repository;
+package pierro.lmsPlatform.Repository.Auth;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import pierro.lmsPlatform.Entity.Auth.User;

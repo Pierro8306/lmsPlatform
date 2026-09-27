@@ -3,7 +3,8 @@ package pierro.lmsPlatform.Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import pierro.lmsPlatform.DTO.Request.ProjectDto;
+import pierro.lmsPlatform.DTO.Request.Project.ProjectDto;
+import pierro.lmsPlatform.DTO.Request.Project.ProjectSubmitRequest;
 import pierro.lmsPlatform.DTO.Response.Project.SubmissionDto;
 import pierro.lmsPlatform.Entity.Auth.User;
 import pierro.lmsPlatform.Entity.Project.Project;
@@ -11,7 +12,8 @@ import pierro.lmsPlatform.Entity.Project.ProjectSubmission;
 import pierro.lmsPlatform.Mapper.SubmissionMapper;
 import pierro.lmsPlatform.Repository.Project.ProjectRepository;
 import pierro.lmsPlatform.Repository.Project.ProjectSubmissionRepository;
-import pierro.lmsPlatform.Repository.UserRepository;
+import pierro.lmsPlatform.Repository.Auth.UserRepository;
+import pierro.lmsPlatform.Security.Crypto.IdObfuscator;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,6 +26,7 @@ public class ProjectService {
     private final ProjectSubmissionRepository projectSubmissionRepository;
     private final UserRepository userRepository;
     private final SubmissionMapper submissionMapper;
+    private final IdObfuscator idObfuscator;
 
     public void createProject(ProjectDto projectDto) {
         Project project = new Project();
@@ -32,12 +35,19 @@ public class ProjectService {
         project.setDeadline(projectDto.getDeadline());
         projectRepository.save(project);
     }
-    public List<SubmissionDto> getAllSubmissionsOfProject(Long projectId){
+
+    public List<SubmissionDto> getAllSubmissionsOfProject(String projectIdH) {
+        Long projectId = idObfuscator.decode(projectIdH);
         List<ProjectSubmission> projectSubmissions = projectSubmissionRepository.findByProjectId(projectId);
         return submissionMapper.listEntityToListDTO(projectSubmissions);
     }
 
-    public void submitProject(Long projectId, Long userId, String githubUrl) {
+    public void submit(Long currentUserId, ProjectSubmitRequest request) {
+        Long projectId = idObfuscator.decode(request.getProjectId());
+
+        User user = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy bài tập"));
 
@@ -45,14 +55,11 @@ public class ProjectService {
             throw new RuntimeException("Đã quá hạn nộp bài. Bạn không thể nộp bài nữa!");
         }
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
         ProjectSubmission submission = projectSubmissionRepository
-                .findByProjectIdAndUserId(projectId, userId)
+                .findByProjectIdAndUserId(projectId, user.getId())
                 .orElse(new ProjectSubmission());
 
-        submission.setGithub_url(githubUrl);
+        submission.setGithub_url(request.getGithubUrl());
         submission.setProject(project);
         submission.setUser(user);
         submission.setStatus("SUBMITTED");
@@ -60,15 +67,17 @@ public class ProjectService {
 
         projectSubmissionRepository.save(submission);
     }
-    public SubmissionDto getMySubmission(Long projectId, Long userId){
-        return submissionMapper.entityToDTO(
-                projectSubmissionRepository.findByProjectIdAndUserId(
-                        projectId,
-                        userId
-                ).orElseThrow(() -> new RuntimeException("Submission not found")));
 
+    public SubmissionDto getMySubmission(String projectIdH, Long currentUserId) {
+        Long projectId = idObfuscator.decode(projectIdH);
+
+        return submissionMapper.entityToDTO(
+                projectSubmissionRepository.findByProjectIdAndUserId(projectId, currentUserId)
+                        .orElseThrow(() -> new RuntimeException("Submission not found")));
     }
-    public void gradeSubmission(Long submissionId, String score, String feedback) {
+
+    public void gradeSubmission(String submissionIdH, String score, String feedback) {
+        Long submissionId = idObfuscator.decode(submissionIdH);
         ProjectSubmission submission = projectSubmissionRepository.findById(submissionId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy bài nộp"));
 
@@ -78,5 +87,4 @@ public class ProjectService {
 
         projectSubmissionRepository.save(submission);
     }
-
 }

@@ -6,6 +6,6 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class QuizAnswer {
-    private Long id_question;
-    private Long id_answer;
+    private String id_question;
+    private String id_answer;
 }

@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import pierro.lmsPlatform.Entity.Auth.UserGroup;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -24,11 +25,14 @@ public class Quiz {
     @Column(nullable = false)
     private String description;
     @Column(nullable = false)
-    LocalTime timeLimit;
+    private LocalTime timeLimit;
     @Column(nullable = false)
-    LocalDateTime startTime;
+    private LocalDateTime startTime;
     @Column(nullable = false)
-    LocalDateTime endTime;
+    private LocalDateTime endTime;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_user_group")
+    private UserGroup userGroup;
     @ManyToMany
     @JoinTable(
             name = "quiz_question",
@@ -36,4 +40,11 @@ public class Quiz {
             inverseJoinColumns = @JoinColumn(name = "id_question")
     )
     private Set<Question> questions = new HashSet<>();
+    @PrePersist
+    @PreUpdate
+    public void validateTime() {
+        if (endTime != null && startTime != null && endTime.isBefore(startTime)) {
+            throw new IllegalArgumentException("EndTime must be after StartTime");
+        }
+    }
 }
