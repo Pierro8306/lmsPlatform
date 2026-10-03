@@ -3,7 +3,6 @@ package pierro.lmsPlatform.DTO.Response;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import pierro.lmsPlatform.Entity.Auth.UserGroup;
 
 @Data
 @NoArgsConstructor
@@ -11,7 +10,7 @@ import pierro.lmsPlatform.Entity.Auth.UserGroup;
 public class UserResposeDto {
     private String id;
     private String role;
-    private UserGroup userGroup;
+    private String userGroup;   // tên nhóm, không phải entity
     private String username;
     private String email;
 }

@@ -3,6 +3,7 @@ package pierro.lmsPlatform.Security.Crypto;
 import org.hashids.Hashids;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import pierro.lmsPlatform.Security.Exception.BadRequestException;
 
 @Component
 public class IdObfuscator {
@@ -20,8 +21,18 @@ public class IdObfuscator {
     }
 
     public Long decode(String hash) {
-        if (hash == null || hash.isBlank()) return null;
-        long[] result = hashids.decode(hash);
-        return (result.length > 0) ? result[0] : null;
+        if (hash == null || hash.isBlank()) {
+            throw new BadRequestException("ID không hợp lệ");
+        }
+        long[] result;
+        try {
+            result = hashids.decode(hash.trim());
+        } catch (RuntimeException e) {
+            throw new BadRequestException("ID không hợp lệ");
+        }
+        if (result.length != 1) {
+            throw new BadRequestException("ID không hợp lệ");
+        }
+        return result[0];
     }
 }

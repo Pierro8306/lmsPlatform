@@ -1,0 +1,153 @@
+package pierro.lmsPlatform.Service.User.Admin;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+import pierro.lmsPlatform.DTO.Request.Auth.CreateUserDto;
+import pierro.lmsPlatform.DTO.Request.Auth.UpdateUserRequest;
+import pierro.lmsPlatform.DTO.Response.UserResposeDto;
+import pierro.lmsPlatform.Entity.Auth.Role;
+import pierro.lmsPlatform.Entity.Auth.User;
+import pierro.lmsPlatform.Entity.Auth.UserGroup;
+import pierro.lmsPlatform.Repository.Auth.PasswordResetTokenRepository;
+import pierro.lmsPlatform.Repository.Auth.RoleRepository;
+import pierro.lmsPlatform.Repository.Auth.UserGroupRepository;
+import pierro.lmsPlatform.Repository.Auth.UserRepository;
+import pierro.lmsPlatform.Security.Crypto.IdObfuscator;
+import pierro.lmsPlatform.Security.Exception.ConflictException;
+import pierro.lmsPlatform.Security.Exception.ForbiddenException;
+import pierro.lmsPlatform.Security.Exception.ResourceNotFoundException;
+
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class UserManagementService {
+
+    private static final String ADMIN_ROLE = "ADMIN";
+    private final UserRepository userRepository;
+    private final UserGroupRepository userGroupRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final RoleRepository roleRepository;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final IdObfuscator idObfuscator;
+
+    @Transactional
+    public void createUser(CreateUserDto dto) {
+        if (userRepository.existsByUsername(dto.getUsername())) {
+            throw new ConflictException("Username đã tồn tại");
+        }
+        if (userRepository.existsByEmail(dto.getEmail())) {
+            throw new ConflictException("Email đã được sử dụng");
+        }
+        User user = new User();
+        user.setRole(findRole(dto.getRole()));
+        user.setUserGroup(findGroup(dto.getUserGroup()));
+        user.setUsername(dto.getUsername());
+        user.setEmail(dto.getEmail());
+        user.setPassword(passwordEncoder.encode(dto.getPassword()));
+        userRepository.save(user);
+    }
+
+    @Transactional
+    public void deleteUser(String idHash, Long currentAdminId) {
+        Long userId = idObfuscator.decode(idHash);
+        if (userId.equals(currentAdminId)) {
+            throw new ForbiddenException("Không thể tự xoá tài khoản của chính mình");
+        }
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
+
+        if (hasRole(user, ADMIN_ROLE)) {
+            assertNotLastAdmin(userId);
+        }
+
+        try {
+            passwordResetTokenRepository.deleteByUser_Id(userId);
+            userRepository.delete(user);
+            userRepository.flush();
+        } catch (DataIntegrityViolationException e) {
+            throw new ConflictException("Người dùng đã có bài nộp/bài thi/sự kiện liên quan nên không thể xoá");
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public List<UserResposeDto> getAllUser() {
+        return userRepository.findAll().stream().map(this::toDto).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<UserResposeDto> getByRole(String roleName) {
+        findRole(roleName); // 404 nếu role không tồn tại
+        return userRepository.findByRole_Name(roleName).stream().map(this::toDto).toList();
+    }
+
+    @Transactional
+    public void updateUser(UpdateUserRequest req, Long currentAdminId) {
+        Long userId = idObfuscator.decode(req.getId());
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
+
+        if (userRepository.existsByUsernameAndIdNot(req.getUsername(), userId)) {
+            throw new ConflictException("Username đã tồn tại");
+        }
+        if (userRepository.existsByEmailAndIdNot(req.getEmail(), userId)) {
+            throw new ConflictException("Email đã được sử dụng");
+        }
+        Role newRole = findRole(req.getRole());
+        boolean roleChanged = user.getRole() == null || !user.getRole().getId().equals(newRole.getId());
+        if (roleChanged) {
+            if (userId.equals(currentAdminId)) {
+                throw new ForbiddenException("Không thể tự thay đổi vai trò của chính mình");
+            }
+            if (hasRole(user, ADMIN_ROLE)) {
+                assertNotLastAdmin(userId);   // đang hạ quyền một admin
+            }
+        }
+
+        user.setUsername(req.getUsername());
+        user.setEmail(req.getEmail());
+        user.setRole(newRole);
+        user.setUserGroup(findGroup(req.getUserGroup()));
+        // user đang được quản lý trong transaction nên không cần save()
+    }
+
+    private boolean hasRole(User user, String roleName) {
+        return user.getRole() != null && roleName.equals(user.getRole().getName());
+    }
+
+    /**
+     * Đảm bảo hệ thống luôn còn ít nhất một ADMIN sau khi xoá/hạ quyền {@code targetAdminId}.
+     * Khoá toàn bộ dòng admin trước khi đếm để hai request đồng thời không thể cùng vượt qua kiểm tra.
+     */
+    private void assertNotLastAdmin(Long targetAdminId) {
+        List<User> admins = userRepository.lockAllByRoleName(ADMIN_ROLE);
+        boolean otherAdminExists = admins.stream().anyMatch(a -> !a.getId().equals(targetAdminId));
+        if (!otherAdminExists) {
+            throw new ConflictException("Hệ thống phải còn ít nhất một tài khoản ADMIN");
+        }
+    }
+
+    private Role findRole(String name) {
+        return roleRepository.findByName(name)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy role: " + name));
+    }
+
+    private UserGroup findGroup(String name) {
+        if (!StringUtils.hasText(name)) return null;
+        return userGroupRepository.findByName(name)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy nhóm: " + name));
+    }
+
+    private UserResposeDto toDto(User u) {
+        return new UserResposeDto(
+                idObfuscator.encode(u.getId()),
+                u.getRole() != null ? u.getRole().getName() : null,
+                u.getUserGroup() != null ? u.getUserGroup().getName() : null,
+                u.getUsername(),
+                u.getEmail());
+    }
+}

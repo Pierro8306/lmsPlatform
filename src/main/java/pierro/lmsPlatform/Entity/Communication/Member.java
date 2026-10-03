@@ -10,7 +10,8 @@ import pierro.lmsPlatform.Entity.Auth.User;
 @Getter
 @Setter
 @NoArgsConstructor
-@Table(name = "Members")
+@Table(name = "Members",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"id_event", "id_user"}))
 public class Member {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

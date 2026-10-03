@@ -5,7 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -18,11 +18,14 @@ public class PasswordResetToken {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_user")
+    @JoinColumn(name = "id_user", nullable = false)
     private User user;
 
+    /** SHA-256 (hex) của token gốc. Token gốc chỉ nằm trong email, DB bị lộ cũng không dùng được. */
+    @Column(nullable = false, unique = true, length = 64)
     private String token;
-    private LocalDate expiration;
-    private LocalDate creationDate;
-    private LocalDate usedDate;
+
+    private LocalDateTime createdAt;
+    private LocalDateTime expiresAt;
+    private LocalDateTime usedAt;
 }

@@ -2,18 +2,24 @@ package pierro.lmsPlatform.Mapper;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.mapstruct.MappingTarget;
+import pierro.lmsPlatform.DTO.Request.Learning.CreateLessonDto;
 import pierro.lmsPlatform.DTO.Response.Learning.LessonDetailDto;
 import pierro.lmsPlatform.Entity.Learning.Lesson;
-import pierro.lmsPlatform.Security.Crypto.IdObfuscator;
 
 import java.util.List;
 
-@Mapper(componentModel = "spring")
-public abstract class LessonMapper {
+@Mapper(componentModel = "spring", uses = IdMapper.class)
+public interface LessonMapper {
+    LessonDetailDto entityToDTO(Lesson lesson);
 
-    @Autowired
-    protected IdObfuscator idObfuscator;
-    @Mapping(target = "id", expression = "java(idObfuscator.encode(Lesson.getId()))")
-    public abstract List<LessonDetailDto> entityToDTO(List<Lesson> lesson);
+    List<LessonDetailDto> entityToDTO(List<Lesson> lessons);
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "course", ignore = true)
+    Lesson toEntity(CreateLessonDto dto);
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "course", ignore = true)
+    void updateEntity(CreateLessonDto dto, @MappingTarget Lesson lesson);
 }

@@ -1,11 +1,16 @@
 package pierro.lmsPlatform.Repository.Notification;
 
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
-import pierro.lmsPlatform.Entity.Auth.User;
-import pierro.lmsPlatform.Entity.Communication.Event;
 import pierro.lmsPlatform.Entity.Communication.Member;
 
-public interface MemberRepository extends JpaRepository<Member,Long> {
-    boolean existsByEventAndUser(Event event, User user);
-    Member findByEventIdAndUserId(Long id_event, Long user_id);
+import java.util.List;
+
+public interface MemberRepository extends JpaRepository<Member, Long> {
+    boolean existsByEvent_IdAndUser_Id(Long eventId, Long userId);
+
+    void deleteByEvent_IdAndUser_Id(Long eventId, Long userId);
+
+    @EntityGraph(attributePaths = "user")
+    List<Member> findByEvent_Id(Long eventId);
 }

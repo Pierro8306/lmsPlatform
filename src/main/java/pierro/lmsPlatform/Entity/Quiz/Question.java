@@ -4,8 +4,9 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import pierro.lmsPlatform.Entity.BaseEntity;
 
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 @Entity
@@ -13,14 +14,19 @@ import java.util.Set;
 @Setter
 @NoArgsConstructor
 @Table(name = "Questions")
-public class Question {
+public class Question extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column(nullable = false)
+
+    // length 2000: mặc định 255 ký tự không đủ cho đề dài
+    @Column(nullable = false, length = 2000)
     private String content;
+
     @Column(nullable = false)
     private String subject;
+
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<QuestionChoice> questionChoices = new HashSet<>();
+    @OrderBy("id ASC")
+    private Set<QuestionChoice> questionChoices = new LinkedHashSet<>();
 }

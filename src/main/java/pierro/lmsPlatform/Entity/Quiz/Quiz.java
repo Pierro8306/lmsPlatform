@@ -20,31 +20,37 @@ public class Quiz {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     @Column(nullable = false)
     private String title;
+
     @Column(nullable = false)
     private String description;
+
+    /** Thời gian được làm bài (dạng HH:mm:ss). */
     @Column(nullable = false)
     private LocalTime timeLimit;
+
     @Column(nullable = false)
     private LocalDateTime startTime;
+
     @Column(nullable = false)
     private LocalDateTime endTime;
+
+    /** Số lần làm tối đa cho mỗi học viên. */
+    @Column(name = "max_attempts", nullable = false, columnDefinition = "INT DEFAULT 1")
+    private int maxAttempts = 1;
+
+    /** null = mở cho tất cả; có giá trị = chỉ nhóm đó được làm. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_user_group")
     private UserGroup userGroup;
-    @ManyToMany
+
+    @ManyToMany(cascade = CascadeType.PERSIST)   // lưu câu hỏi cùng quiz, không cần questionRepository
     @JoinTable(
             name = "quiz_question",
             joinColumns = @JoinColumn(name = "id_quiz"),
             inverseJoinColumns = @JoinColumn(name = "id_question")
     )
     private Set<Question> questions = new HashSet<>();
-    @PrePersist
-    @PreUpdate
-    public void validateTime() {
-        if (endTime != null && startTime != null && endTime.isBefore(startTime)) {
-            throw new IllegalArgumentException("EndTime must be after StartTime");
-        }
-    }
 }

@@ -22,5 +22,7 @@ public class Event {
     private String description;
     private LocalDate date;
     @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<Member> members = new HashSet<>();
+    private Set<Member> members = new HashSet<>(
+
+    );
 }

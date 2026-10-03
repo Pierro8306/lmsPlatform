@@ -31,4 +31,7 @@ public class User {
     @Column(nullable = false)
     private String password;
 
+    @Column(name = "token_version", nullable = false, columnDefinition = "INT DEFAULT 0")
+    private int tokenVersion = 0;
+
 }

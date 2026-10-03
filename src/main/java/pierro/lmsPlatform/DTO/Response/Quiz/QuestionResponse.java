@@ -1,12 +1,13 @@
 package pierro.lmsPlatform.DTO.Response.Quiz;
 
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.List;
 
-@Setter
+@Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class QuestionResponse {

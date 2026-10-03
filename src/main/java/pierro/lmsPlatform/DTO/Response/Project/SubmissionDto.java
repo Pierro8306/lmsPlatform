@@ -1,7 +1,9 @@
 package pierro.lmsPlatform.DTO.Response.Project;
 
-import java.time.LocalDateTime;
+import lombok.Data;
 
+import java.time.LocalDateTime;
+@Data
 public class SubmissionDto {
     private String id;
     private String userName;

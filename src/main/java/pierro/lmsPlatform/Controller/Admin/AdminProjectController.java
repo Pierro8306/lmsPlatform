@@ -1,35 +1,42 @@
 package pierro.lmsPlatform.Controller.Admin;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import pierro.lmsPlatform.DTO.Request.Project.GradeSubmissionRequest;
 import pierro.lmsPlatform.DTO.Request.Project.ProjectDto;
 import pierro.lmsPlatform.DTO.Response.ResponseObject;
-import pierro.lmsPlatform.Service.ProjectService;
+import pierro.lmsPlatform.Service.Project.Admin.AdminProjectService;
 
 @RestController
 @RequestMapping("/api/admin/projects")
 @RequiredArgsConstructor
 public class AdminProjectController {
-    private final ProjectService projectService;
+    private final AdminProjectService projectService;
 
+    @GetMapping
+    public ResponseEntity<ResponseObject> listProjects() {
+        return ResponseObject.ok("Lấy danh sách bài tập dự án thành công", projectService.listProjects());
+    }
+
+    /** Trả về bài tập vừa tạo (có id mã hoá để student nộp bài, admin chấm bài). */
     @PostMapping
-    public ResponseEntity<ResponseObject> createProject(@RequestBody ProjectDto projectDto) {
-        projectService.createProject(projectDto);
-        return ResponseEntity.ok(new ResponseObject("SUCCESS", "Tạo bài tập dự án thành công", null));
+    public ResponseEntity<ResponseObject> createProject(@Valid @RequestBody ProjectDto projectDto) {
+        return ResponseObject.ok("Tạo bài tập dự án thành công", projectService.createProject(projectDto));
     }
 
     @GetMapping("/{projectId}/submissions")
     public ResponseEntity<ResponseObject> getAllSubmissions(@PathVariable String projectId) {
-        return ResponseEntity.ok(new ResponseObject("SUCCESS", "Lấy danh sách bài nộp thành công", projectService.getAllSubmissionsOfProject(projectId)));
+        return ResponseObject.ok("Lấy danh sách bài nộp thành công",
+                projectService.getAllSubmissionsOfProject(projectId));
     }
 
+    /** Body JSON: { "score": 8.5, "feedback": "..." } (trước đây là query param). */
     @PutMapping("/submissions/{submissionId}/grade")
-    public ResponseEntity<ResponseObject> gradeSubmission(
-            @PathVariable String submissionId,
-            @RequestParam String score,
-            @RequestParam String feedback) {
-        projectService.gradeSubmission(submissionId, score, feedback);
-        return ResponseEntity.ok(new ResponseObject("SUCCESS", "Chấm điểm thành công", null));
+    public ResponseEntity<ResponseObject> gradeSubmission(@PathVariable String submissionId,
+                                                          @Valid @RequestBody GradeSubmissionRequest request) {
+        projectService.gradeSubmission(submissionId, request);
+        return ResponseObject.ok("Chấm điểm thành công");
     }
 }

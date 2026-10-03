@@ -9,17 +9,21 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-@Table(name = "Answers")
+@Table(name = "Answers",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"id_attempt", "id_question", "id_choice"}))
 public class Answer {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_attempt")
     private Attempt attempt;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_question")
     private Question question;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_choice")
     private QuestionChoice questionChoice;

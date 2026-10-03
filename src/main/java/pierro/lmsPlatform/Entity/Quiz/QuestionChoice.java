@@ -14,11 +14,15 @@ public class QuestionChoice {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     @Column(nullable = false)
     private String content;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_question")
     private Question question;
-    @Column(nullable = false)
-    boolean isCorrect;
+
+    // Lombok: boolean `correct` => isCorrect()/setCorrect(); giữ tên cột cũ "is_correct"
+    @Column(name = "is_correct", nullable = false)
+    private boolean correct;
 }
