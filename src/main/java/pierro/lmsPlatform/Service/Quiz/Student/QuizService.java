@@ -31,7 +31,6 @@ import java.util.*;
 @RequiredArgsConstructor
 public class QuizService {
 
-    private static final long GRACE_SECONDS = 15;
 
     private final UserRepository userRepository;
     private final QuizRepository quizRepository;
@@ -66,7 +65,7 @@ public class QuizService {
     @Transactional(noRollbackFor = ApiException.class)
     public StartQuizResponse startQuiz(String quizIdH, Long userId) {
         User user = lockUser(userId);
-        Quiz quiz = findQuiz(idObfuscator.decode(quizIdH));
+        Quiz quiz = lockQuizShared(idObfuscator.decode(quizIdH));
         assertCanAccess(quiz, user);
 
         LocalDateTime now = LocalDateTime.now();
@@ -124,6 +123,9 @@ public class QuizService {
         List<Answer> answers = new ArrayList<>();
 
         for (QuizAnswer qa : quizAnswers == null ? List.<QuizAnswer>of() : quizAnswers) {
+            if (qa == null) {
+                throw new BadRequestException("Dữ liệu câu trả lời không hợp lệ");
+            }
             Long questionId = idObfuscator.decode(qa.getId_question());
             Long choiceId = idObfuscator.decode(qa.getId_answer());
 
@@ -222,19 +224,15 @@ public class QuizService {
     }
 
     private LocalDateTime deadlineOf(Attempt attempt, Quiz quiz) {
-        Duration limit = Duration.between(LocalTime.MIDNIGHT, quiz.getTimeLimit());
-        LocalDateTime byLimit = attempt.getStartedAt().plus(limit);
-        return byLimit.isBefore(quiz.getEndTime()) ? byLimit : quiz.getEndTime();
+        return QuizHelper.deadlineOf(attempt, quiz);
     }
 
     private boolean isPastDeadline(Attempt attempt, Quiz quiz, LocalDateTime now) {
-        return now.isAfter(deadlineOf(attempt, quiz).plusSeconds(GRACE_SECONDS));
+        return QuizHelper.isPastDeadline(attempt, quiz, now);
     }
 
     private void expire(Attempt attempt, LocalDateTime now) {
-        attempt.setStatus(AttemptStatus.EXPIRED);
-        attempt.setSubmittedAt(now);
-        attempt.setPoints(0.0);
+        QuizHelper.expire(attempt, now);
     }
 
     private void assertCanAccess(Quiz quiz, User user) {
@@ -243,6 +241,12 @@ public class QuizService {
         if (user.getUserGroup() == null || !required.getId().equals(user.getUserGroup().getId())) {
             throw new ForbiddenException("Bài thi này không dành cho nhóm của bạn");
         }
+    }
+
+    /** Khoá chia sẻ dòng quiz: admin (FOR UPDATE) không thể thay câu hỏi / xoá quiz giữa chừng lúc tạo attempt. */
+    private Quiz lockQuizShared(Long id) {
+        return quizRepository.lockSharedById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài thi"));
     }
 
     private Quiz findQuiz(Long id) {
@@ -260,3 +264,4 @@ public class QuizService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
     }
 }
+

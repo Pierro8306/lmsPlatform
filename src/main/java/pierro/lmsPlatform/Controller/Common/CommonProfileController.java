@@ -14,7 +14,7 @@ import pierro.lmsPlatform.DTO.Response.ResponseObject;
 import pierro.lmsPlatform.Service.User.Student.ProfileService;
 
 @RestController
-@RequestMapping("/api/user/profile")
+@RequestMapping("/api/common/profile")
 @RequiredArgsConstructor
 public class CommonProfileController {
     private final ProfileService profileService;

@@ -1,4 +1,5 @@
 package pierro.lmsPlatform.Service.Learnning.Admin;
+import pierro.lmsPlatform.Security.Exception.ConflictException;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -46,7 +47,10 @@ public class AdminCourseService {
 
     @Transactional
     public void deleteCourse(String courseIdH) {
-        courseRepository.delete(findCourse(idObfuscator.decode(courseIdH)));
+        Long courseId = idObfuscator.decode(courseIdH);
+        findCourse(courseId);                               // 404 nếu không tồn tại
+        lessonRepository.detachFromCourse(courseId);        // bài học trở về trạng thái "chưa gắn khoá", không bị xoá
+        courseRepository.deleteById(courseId);
     }
 
     @Transactional
@@ -78,6 +82,11 @@ public class AdminCourseService {
     public void addLesson(String courseIdH, String lessonIdH) {
         Course course = findCourse(idObfuscator.decode(courseIdH));
         Lesson lesson = findLesson(idObfuscator.decode(lessonIdH));
+        Course current = lesson.getCourse();
+        if (current != null) {
+            if (current.getId().equals(course.getId())) return;   // đã thuộc khoá này
+            throw new ConflictException("Bài học đang thuộc khoá học khác, hãy gỡ khỏi khoá đó trước");
+        }
         lesson.setCourse(course);
     }
 
@@ -110,3 +119,4 @@ public class AdminCourseService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài học"));
     }
 }
+

@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserResposeDto {
+public class UserResponseDto {
     private String id;
     private String role;
     private String userGroup;   // tên nhóm, không phải entity

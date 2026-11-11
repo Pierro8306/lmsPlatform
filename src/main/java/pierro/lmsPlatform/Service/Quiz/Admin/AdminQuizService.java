@@ -1,4 +1,5 @@
 package pierro.lmsPlatform.Service.Quiz.Admin;
+import java.util.Objects;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -86,7 +87,23 @@ public class AdminQuizService {
     @Transactional
     public void update(String quizIdH, UpdateQuizRequest req) {
         QuizHelper.validateSchedule(req.getStartTime(), req.getEndTime(), req.getTimeLimit());
-        Quiz quiz = findQuiz(quizIdH);
+        Quiz quiz = findQuizForUpdate(quizIdH);
+        if (attemptRepository.countByQuiz_Id(quiz.getId()) > 0) {
+            // Đã có người làm: không được đổi những thứ làm thay đổi hạn chót / đối tượng của các lượt đang chạy
+            String newGroup = StringUtils.hasText(req.getUserGroup()) ? req.getUserGroup() : null;
+            String curGroup = quiz.getUserGroup() == null ? null : quiz.getUserGroup().getName();
+            if (!quiz.getStartTime().equals(req.getStartTime())
+                    || !quiz.getTimeLimit().equals(req.getTimeLimit())
+                    || !Objects.equals(curGroup, newGroup)) {
+                throw new ConflictException("Bài thi đã có học viên làm bài, không thể đổi giờ mở, thời gian làm bài hoặc nhóm");
+            }
+            if (req.getEndTime().isBefore(quiz.getEndTime())) {
+                throw new ConflictException("Bài thi đã có học viên làm bài, chỉ được gia hạn giờ đóng, không được rút ngắn");
+            }
+            if (req.getMaxAttempts() != null && req.getMaxAttempts() < quiz.getMaxAttempts()) {
+                throw new ConflictException("Bài thi đã có học viên làm bài, không thể giảm số lần làm tối đa");
+            }
+        }
         quiz.setTitle(req.getTitle());
         quiz.setDescription(req.getDescription());
         quiz.setStartTime(req.getStartTime());
@@ -98,7 +115,7 @@ public class AdminQuizService {
 
     @Transactional
     public void replaceQuestions(String quizIdH, ReplaceQuestionsRequest req) {
-        Quiz quiz = findQuiz(quizIdH);
+        Quiz quiz = findQuizForUpdate(quizIdH);
         if (attemptRepository.countByQuiz_Id(quiz.getId()) > 0) {
             throw new ConflictException("Bài thi đã có học viên làm bài, không thể thay đổi câu hỏi");
         }
@@ -111,7 +128,7 @@ public class AdminQuizService {
 
     @Transactional
     public void delete(String quizIdH, boolean force) {
-        Quiz quiz = findQuiz(quizIdH);
+        Quiz quiz = findQuizForUpdate(quizIdH);
         List<Attempt> attempts = attemptRepository.findAllByQuiz_Id(quiz.getId());
         if (!attempts.isEmpty()) {
             if (!force) {
@@ -164,6 +181,12 @@ public class AdminQuizService {
                 attemptCount);
     }
 
+    /** Nạp bài thi kèm khoá ghi: tuần tự hoá với học viên bắt đầu làm bài (QuizService.startQuiz). */
+    private Quiz findQuizForUpdate(String quizIdH) {
+        return quizRepository.lockForUpdateById(idObfuscator.decode(quizIdH))
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài thi"));
+    }
+
     private Quiz findQuiz(String quizIdH) {
         return quizRepository.findById(idObfuscator.decode(quizIdH))
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài thi"));
@@ -175,3 +198,4 @@ public class AdminQuizService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy nhóm: " + name));
     }
 }
+

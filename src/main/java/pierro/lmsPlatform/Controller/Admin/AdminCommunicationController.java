@@ -18,14 +18,14 @@ public class AdminCommunicationController {
     private final AdminCommunicationService communicationService;
 
     @PostMapping("/notifications")
-    public ResponseEntity<ResponseObject> createNotification(@RequestParam String title, @RequestParam String description) {
-        communicationService.createNotification(title, description);
+    public ResponseEntity<ResponseObject> createNotification(@Valid @RequestBody NotificationRequest request) {
+        communicationService.createNotification(request);
         return ResponseObject.ok("Tạo thông báo thành công");
     }
 
     @PostMapping("/events")
-    public ResponseEntity<ResponseObject> createEvent(@RequestParam String title, @RequestParam String description, @RequestParam LocalDateTime date) {
-        communicationService.createEvent(title, description, date.toLocalDate());
+    public ResponseEntity<ResponseObject> createEvent(@Valid @RequestBody EventRequest request) {
+        communicationService.createEvent(request);
         return ResponseObject.ok("Tạo sự kiện thành công");
     }
 
@@ -60,3 +60,4 @@ public class AdminCommunicationController {
         return ResponseObject.ok("Lấy danh sách thành viên tham gia sự kiện thành công", communicationService.getMembersByEvent(eventId));
     }
 }
+

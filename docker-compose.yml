@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  # 1. Backend Java Spring Boot
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: judge_backend
+    ports:
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /tmp/atlas_submissions:/tmp/atlas_submissions
+    depends_on:
+      - sandbox-images-puller
+    restart: unless-stopped
+
+  # 2. Service tải trước các image chạy code (chạy 1 lần rồi tắt)
+  sandbox-images-puller:
+    image: docker:cli
+    container_name: judge_image_puller
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: "no"
+    command: >
+      sh -c "docker pull openjdk:17-alpine && 
+             docker pull python:3.9-alpine && 
+             docker pull gcc:alpine"

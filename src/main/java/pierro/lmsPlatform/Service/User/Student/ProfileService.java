@@ -1,11 +1,12 @@
 package pierro.lmsPlatform.Service.User.Student;
+import java.util.Locale;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pierro.lmsPlatform.DTO.Request.Auth.UpdateProfileRequest;
-import pierro.lmsPlatform.DTO.Response.UserResposeDto;
+import pierro.lmsPlatform.DTO.Response.UserResponseDto;
 import pierro.lmsPlatform.Entity.Auth.User;
 import pierro.lmsPlatform.Repository.Auth.UserRepository;
 import pierro.lmsPlatform.Security.Crypto.IdObfuscator;
@@ -19,20 +20,20 @@ public class ProfileService {
     private final IdObfuscator idObfuscator;
 
     @Transactional(readOnly = true)
-    public UserResposeDto getProfile(Long userId) {
+    public UserResponseDto getProfile(Long userId) {
         return toDto(findUser(userId));
     }
 
     @Transactional
-    public UserResposeDto updateProfile(Long userId, UpdateProfileRequest req) {
+    public UserResponseDto updateProfile(Long userId, UpdateProfileRequest req) {
         User user = findUser(userId);
         String username = req.getUsername().trim();
-        String email = req.getEmail().trim();
+        String email = req.getEmail().trim().toLowerCase(Locale.ROOT);
 
         if (userRepository.existsByUsernameAndIdNot(username, userId)) {
             throw new ConflictException("Username đã tồn tại");
         }
-        if (userRepository.existsByEmailAndIdNot(email, userId)) {
+        if (userRepository.existsByEmailIgnoreCaseAndIdNot(email, userId)) {
             throw new ConflictException("Email đã được sử dụng");
         }
         user.setUsername(username);
@@ -50,8 +51,8 @@ public class ProfileService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
     }
 
-    private UserResposeDto toDto(User u) {
-        return new UserResposeDto(
+    private UserResponseDto toDto(User u) {
+        return new UserResponseDto(
                 idObfuscator.encode(u.getId()),
                 u.getRole() != null ? u.getRole().getName() : null,
                 u.getUserGroup() != null ? u.getUserGroup().getName() : null,
@@ -59,3 +60,4 @@ public class ProfileService {
                 u.getEmail());
     }
 }
+

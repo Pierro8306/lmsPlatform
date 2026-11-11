@@ -26,10 +26,10 @@ public class AdminCommunicationService {
     private final IdObfuscator idObfuscator;
 
     @Transactional
-    public void createNotification(String title, String description) {
+    public void createNotification(NotificationRequest req) {
         Notification n = new Notification();
-        n.setTitle(title);
-        n.setDescription(description);
+        n.setTitle(req.getTitle().trim());
+        n.setDescription(req.getDescription() == null ? null : req.getDescription().trim());
         notificationRepository.save(n);
     }
 
@@ -46,11 +46,11 @@ public class AdminCommunicationService {
     }
 
     @Transactional
-    public void createEvent(String title, String description, LocalDate date) {
+    public void createEvent(EventRequest req) {
         Event e = new Event();
-        e.setTitle(title);
-        e.setDescription(description);
-        e.setDate(date);
+        e.setTitle(req.getTitle().trim());
+        e.setDescription(req.getDescription() == null ? null : req.getDescription().trim());
+        e.setDate(req.getDate());
         eventRepository.save(e);
     }
 
@@ -91,3 +91,4 @@ public class AdminCommunicationService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sự kiện"));
     }
 }
+

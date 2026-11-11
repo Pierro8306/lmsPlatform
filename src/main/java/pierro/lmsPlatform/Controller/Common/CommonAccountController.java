@@ -13,7 +13,7 @@ import pierro.lmsPlatform.DTO.Response.ResponseObject;
 import pierro.lmsPlatform.Service.Auth.AuthenticationService;
 
 @RestController
-@RequestMapping("/api/user")
+@RequestMapping("/api/common")
 @RequiredArgsConstructor
 public class CommonAccountController {
     private final AuthenticationService authService;

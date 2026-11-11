@@ -13,8 +13,10 @@ import java.util.List;
 @Data
 public class QuestionRequest {
     @NotBlank(message = "Nội dung câu hỏi không được để trống")
+    @Size(max = 2000, message = "Nội dung câu hỏi tối đa 2000 ký tự")
     private String questionContent;
 
+    @Size(max = 255, message = "Chủ đề tối đa 255 ký tự")
     private String subject;
 
     @NotNull(message = "Câu hỏi cần có danh sách đáp án")
@@ -28,3 +30,4 @@ public class QuestionRequest {
         return choices == null || choices.stream().anyMatch(c -> c != null && c.isCorrect());
     }
 }
+

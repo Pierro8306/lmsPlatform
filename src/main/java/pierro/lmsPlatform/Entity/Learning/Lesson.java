@@ -15,10 +15,14 @@ public class Lesson {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String title;
+    @Column(columnDefinition = "TEXT")
     private String content;
+    @Column(length = 1000)
     private String video_url;
+    @Column(columnDefinition = "TEXT")
     private String attachment_urls;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_course")
     private Course course;
 }
+

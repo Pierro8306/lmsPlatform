@@ -20,6 +20,7 @@ public class Course {
     @Column(nullable = false)
     private String title;
     private String description;
-    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true,fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "course", fetch = FetchType.LAZY)
     private Set<Lesson> lessons = new HashSet<>();
 }
+

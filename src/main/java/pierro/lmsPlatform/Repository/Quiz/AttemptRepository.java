@@ -34,4 +34,8 @@ public interface AttemptRepository extends JpaRepository<Attempt, Long> {
     /** Mỗi dòng: [quizId, số lượt đã làm của user]. */
     @Query("select a.quiz.id, count(a) from Attempt a where a.user.id = :userId and a.quiz.id in :quizIds group by a.quiz.id")
     List<Object[]> countByUserForQuizzes(@Param("userId") Long userId, @Param("quizIds") Collection<Long> quizIds);
+
+    /** Các lượt đang làm dở, nạp sẵn quiz để tính hạn chót (dùng cho job dọn attempt quá hạn). */
+    @EntityGraph(attributePaths = "quiz")
+    List<Attempt> findByStatus(AttemptStatus status);
 }

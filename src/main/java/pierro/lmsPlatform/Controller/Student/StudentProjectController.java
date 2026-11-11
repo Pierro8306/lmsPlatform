@@ -10,7 +10,7 @@ import pierro.lmsPlatform.DTO.Response.ResponseObject;
 import pierro.lmsPlatform.Service.Project.Student.ProjectSubmissionService;
 
 @RestController
-@RequestMapping("/api/user/projects")
+@RequestMapping("/api/student/projects")
 @RequiredArgsConstructor
 public class StudentProjectController {
     private final ProjectSubmissionService projectService;

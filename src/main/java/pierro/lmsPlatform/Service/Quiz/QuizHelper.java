@@ -1,4 +1,8 @@
 package pierro.lmsPlatform.Service.Quiz;
+import pierro.lmsPlatform.Entity.Quiz.Attempt;
+import pierro.lmsPlatform.Entity.Quiz.AttemptStatus;
+import pierro.lmsPlatform.Entity.Quiz.Quiz;
+import java.time.Duration;
 
 import org.springframework.util.StringUtils;
 import pierro.lmsPlatform.DTO.Request.Quiz.Choice;
@@ -45,5 +49,25 @@ public final class QuizHelper {
 
     public static Map<Long, Long> toCountMap(List<Object[]> rows) {
         return rows.stream().collect(Collectors.toMap(r -> (Long) r[0], r -> (Long) r[1]));
+    }
+
+    /** Cho phép trễ tối đa từng này giây (độ trễ mạng) sau hạn chót. */
+    public static final long GRACE_SECONDS = 15;
+
+    /** Hạn chót nộp bài do server tính: min(startedAt + timeLimit, quiz.endTime). */
+    public static LocalDateTime deadlineOf(Attempt attempt, Quiz quiz) {
+        Duration limit = Duration.between(LocalTime.MIDNIGHT, quiz.getTimeLimit());
+        LocalDateTime byLimit = attempt.getStartedAt().plus(limit);
+        return byLimit.isBefore(quiz.getEndTime()) ? byLimit : quiz.getEndTime();
+    }
+
+    public static boolean isPastDeadline(Attempt attempt, Quiz quiz, LocalDateTime now) {
+        return now.isAfter(deadlineOf(attempt, quiz).plusSeconds(GRACE_SECONDS));
+    }
+
+    public static void expire(Attempt attempt, LocalDateTime now) {
+        attempt.setStatus(AttemptStatus.EXPIRED);
+        attempt.setSubmittedAt(now);
+        attempt.setPoints(0.0);
     }
 }

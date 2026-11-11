@@ -1,4 +1,7 @@
 package pierro.lmsPlatform.Repository.Quiz;
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.Lock;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -23,4 +26,14 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
 
     @Query("select q from Quiz q where q.userGroup is null or q.userGroup.id = :groupId order by q.startTime desc")
     List<Quiz> findAvailableForGroup(@Param("groupId") Long groupId);
+
+    /** SELECT ... FOR UPDATE: admin sửa/xoá câu hỏi phải chờ mọi học viên đang bắt đầu làm bài. */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select q from Quiz q where q.id = :id")
+    Optional<Quiz> lockForUpdateById(@Param("id") Long id);
+
+    /** Khoá chia sẻ (FOR SHARE): nhiều học viên start song song được, nhưng chặn admin đổi/xoá bài thi. */
+    @Lock(LockModeType.PESSIMISTIC_READ)
+    @Query("select q from Quiz q where q.id = :id")
+    Optional<Quiz> lockSharedById(@Param("id") Long id);
 }

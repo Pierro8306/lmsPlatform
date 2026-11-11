@@ -1,4 +1,5 @@
 package pierro.lmsPlatform.DTO.Request.Quiz;
+import jakarta.validation.constraints.Size;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -12,9 +13,11 @@ import java.time.LocalTime;
 @Data
 public class UpdateQuizRequest {
     @NotBlank(message = "Tiêu đề không được để trống")
+    @Size(max = 255, message = "Tiêu đề tối đa 255 ký tự")
     private String title;
 
     @NotBlank(message = "Mô tả không được để trống")
+    @Size(max = 5000, message = "Mô tả tối đa 5000 ký tự")
     private String description;
 
     @NotNull(message = "Thời gian mở bài thi không được để trống")
@@ -34,3 +37,4 @@ public class UpdateQuizRequest {
     /** Tên nhóm được phép làm. Để trống = tất cả. */
     private String userGroup;
 }
+

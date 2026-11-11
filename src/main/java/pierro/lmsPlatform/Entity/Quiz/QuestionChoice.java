@@ -15,7 +15,7 @@ public class QuestionChoice {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 1000)
     private String content;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -26,3 +26,4 @@ public class QuestionChoice {
     @Column(name = "is_correct", nullable = false)
     private boolean correct;
 }
+

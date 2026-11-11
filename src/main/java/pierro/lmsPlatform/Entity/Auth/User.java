@@ -27,6 +27,7 @@ public class User {
     @Column(unique = true, nullable = false,columnDefinition = "VARCHAR(100)")
     private String username;
     @Email
+    @Column(unique = true, length = 255)
     private String email;
     @Column(nullable = false)
     private String password;
@@ -35,3 +36,4 @@ public class User {
     private int tokenVersion = 0;
 
 }
+

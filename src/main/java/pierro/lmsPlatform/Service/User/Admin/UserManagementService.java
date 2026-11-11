@@ -1,4 +1,5 @@
 package pierro.lmsPlatform.Service.User.Admin;
+import java.util.Locale;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -8,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import pierro.lmsPlatform.DTO.Request.Auth.CreateUserDto;
 import pierro.lmsPlatform.DTO.Request.Auth.UpdateUserRequest;
-import pierro.lmsPlatform.DTO.Response.UserResposeDto;
+import pierro.lmsPlatform.DTO.Response.UserResponseDto;
 import pierro.lmsPlatform.Entity.Auth.Role;
 import pierro.lmsPlatform.Entity.Auth.User;
 import pierro.lmsPlatform.Entity.Auth.UserGroup;
@@ -37,17 +38,19 @@ public class UserManagementService {
 
     @Transactional
     public void createUser(CreateUserDto dto) {
-        if (userRepository.existsByUsername(dto.getUsername())) {
+        String username = dto.getUsername().trim();
+        String email = normalizeEmail(dto.getEmail());
+        if (userRepository.existsByUsername(username)) {
             throw new ConflictException("Username đã tồn tại");
         }
-        if (userRepository.existsByEmail(dto.getEmail())) {
+        if (userRepository.existsByEmailIgnoreCase(email)) {
             throw new ConflictException("Email đã được sử dụng");
         }
         User user = new User();
         user.setRole(findRole(dto.getRole()));
         user.setUserGroup(findGroup(dto.getUserGroup()));
-        user.setUsername(dto.getUsername());
-        user.setEmail(dto.getEmail());
+        user.setUsername(username);
+        user.setEmail(email);
         user.setPassword(passwordEncoder.encode(dto.getPassword()));
         userRepository.save(user);
     }
@@ -75,12 +78,12 @@ public class UserManagementService {
     }
 
     @Transactional(readOnly = true)
-    public List<UserResposeDto> getAllUser() {
+    public List<UserResponseDto> getAllUser() {
         return userRepository.findAll().stream().map(this::toDto).toList();
     }
 
     @Transactional(readOnly = true)
-    public List<UserResposeDto> getByRole(String roleName) {
+    public List<UserResponseDto> getByRole(String roleName) {
         findRole(roleName); // 404 nếu role không tồn tại
         return userRepository.findByRole_Name(roleName).stream().map(this::toDto).toList();
     }
@@ -88,13 +91,15 @@ public class UserManagementService {
     @Transactional
     public void updateUser(UpdateUserRequest req, Long currentAdminId) {
         Long userId = idObfuscator.decode(req.getId());
+        String username = req.getUsername().trim();
+        String email = normalizeEmail(req.getEmail());
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
 
-        if (userRepository.existsByUsernameAndIdNot(req.getUsername(), userId)) {
+        if (userRepository.existsByUsernameAndIdNot(username, userId)) {
             throw new ConflictException("Username đã tồn tại");
         }
-        if (userRepository.existsByEmailAndIdNot(req.getEmail(), userId)) {
+        if (userRepository.existsByEmailIgnoreCaseAndIdNot(email, userId)) {
             throw new ConflictException("Email đã được sử dụng");
         }
         Role newRole = findRole(req.getRole());
@@ -108,11 +113,16 @@ public class UserManagementService {
             }
         }
 
-        user.setUsername(req.getUsername());
-        user.setEmail(req.getEmail());
+        user.setUsername(username);
+        user.setEmail(email);
         user.setRole(newRole);
         user.setUserGroup(findGroup(req.getUserGroup()));
         // user đang được quản lý trong transaction nên không cần save()
+    }
+
+    /** Email luôn lưu dạng chữ thường, đã trim: tránh "A@x.com" và "a@x.com" thành hai tài khoản. */
+    private static String normalizeEmail(String email) {
+        return email.trim().toLowerCase(Locale.ROOT);
     }
 
     private boolean hasRole(User user, String roleName) {
@@ -142,8 +152,8 @@ public class UserManagementService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy nhóm: " + name));
     }
 
-    private UserResposeDto toDto(User u) {
-        return new UserResposeDto(
+    private UserResponseDto toDto(User u) {
+        return new UserResponseDto(
                 idObfuscator.encode(u.getId()),
                 u.getRole() != null ? u.getRole().getName() : null,
                 u.getUserGroup() != null ? u.getUserGroup().getName() : null,
@@ -151,3 +161,4 @@ public class UserManagementService {
                 u.getEmail());
     }
 }
+

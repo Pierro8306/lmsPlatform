@@ -1,4 +1,6 @@
 package pierro.lmsPlatform.Service.Auth;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -66,15 +68,16 @@ public class PasswordResetService {
             token.setExpiresAt(now.plusMinutes(expirationMinutes));
             tokenRepository.save(token);
 
-            mailService.sendPasswordReset(user.getEmail(),
-                    frontendUrl + "/reset-password?token=" + rawToken, expirationMinutes);
+            final String to = user.getEmail();
+            final String link = frontendUrl + "/reset-password?token=" + rawToken;
+            runAfterCommit(() -> mailService.sendPasswordReset(to, link, expirationMinutes));
         });
     }
 
     @Transactional
     public void resetPassword(ResetPasswordRequest request) {
         LocalDateTime now = LocalDateTime.now();
-        PasswordResetToken token = tokenRepository.findByToken(sha256(request.getToken().trim()))
+        PasswordResetToken token = tokenRepository.lockByToken(sha256(request.getToken().trim()))
                 .filter(t -> t.getUsedAt() == null && t.getExpiresAt().isAfter(now))
                 .orElseThrow(() -> new BadRequestException("Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn"));
 
@@ -82,6 +85,20 @@ public class PasswordResetService {
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         user.setTokenVersion(user.getTokenVersion() + 1);   // đăng xuất mọi thiết bị
         token.setUsedAt(now);
+    }
+
+    /** Chỉ gửi mail khi transaction đã commit: tránh gửi link cho token chưa tồn tại / đã bị rollback. */
+    private static void runAfterCommit(Runnable task) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    task.run();
+                }
+            });
+        } else {
+            task.run();
+        }
     }
 
     private static String newRawToken() {
@@ -99,3 +116,4 @@ public class PasswordResetService {
         }
     }
 }
+

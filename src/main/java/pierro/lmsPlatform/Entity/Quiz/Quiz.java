@@ -24,7 +24,7 @@ public class Quiz {
     @Column(nullable = false)
     private String title;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String description;
 
     /** Thời gian được làm bài (dạng HH:mm:ss). */
@@ -54,3 +54,4 @@ public class Quiz {
     )
     private Set<Question> questions = new HashSet<>();
 }
+
