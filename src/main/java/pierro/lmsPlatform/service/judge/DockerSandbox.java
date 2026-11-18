@@ -314,14 +314,14 @@ public class DockerSandbox {
      */
     private static String script(String runCmd, int hardMs) {
         String t = String.format(Locale.ROOT, "%.3f", hardMs / 1000.0);
-        return "S=$(date +%s%N)\n"
-             + "timeout -s KILL " + t + " setpriv --reuid=65534 --regid=65534 --clear-groups "
-             + runCmd + " < /io/input.txt > /io/stdout.txt 2> /io/stderr.txt\n"
-             + "C=$?\n"
-             + "E=$(date +%s%N)\n"
-             + "P=$(cat /sys/fs/cgroup/memory.peak 2>/dev/null || cat /sys/fs/cgroup/memory/memory.max_usage_in_bytes 2>/dev/null || echo 0)\n"
-             + "O=$(sed -n 's/^oom_kill //p' /sys/fs/cgroup/memory.events /sys/fs/cgroup/memory/memory.oom_control 2>/dev/null | head -n 1)\n"
-             + "echo \"" + META_PREFIX + "$C $(( (E-S)/1000000 )) $(( P/1024 )) ${O:-0}\"\n";
+        return "S=$(date +%s%N); "
+                + "timeout -s KILL " + t + " setpriv --reuid=65534 --regid=65534 --clear-groups "
+                + runCmd + " < /io/input.txt > /io/stdout.txt 2> /io/stderr.txt; "
+                + "C=$?; "
+                + "E=$(date +%s%N); "
+                + "P=$(cat /sys/fs/cgroup/memory.peak 2>/dev/null || cat /sys/fs/cgroup/memory/memory.max_usage_in_bytes 2>/dev/null || echo 0); "
+                + "O=$(sed -n 's/^oom_kill //p' /sys/fs/cgroup/memory.events /sys/fs/cgroup/memory/memory.oom_control 2>/dev/null | head -n 1); "
+                + "echo " + META_PREFIX + "$C $(( (E-S)/1000000 )) $(( P/1024 )) ${O:-0}";
     }
 
     /** oomKills: số lần OOM-kill do cgroup ghi nhận (0 nếu kernel không cung cấp). */
