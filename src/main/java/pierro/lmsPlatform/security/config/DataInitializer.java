@@ -30,10 +30,10 @@ public class DataInitializer {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    @Value("${app.seed.admin-password:}")
+    @Value("${APP_SEED_ADMIN_PASSWORD:}")
     private String adminPassword;
 
-    @Value("${app.seed.student-password:}")
+    @Value("${APP_SEED_ADMIN_PASSWORD:}")
     private String studentPassword;
 
     @Bean
