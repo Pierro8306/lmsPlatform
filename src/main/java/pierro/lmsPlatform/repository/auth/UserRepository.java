@@ -26,6 +26,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @EntityGraph(attributePaths = {"role", "userGroup"})
     List<User> findByRole_Name(String roleName);
 
+    List<User> findByUserGroup_Id(Long groupId);
+
     /** Khoá dòng user (SELECT ... FOR UPDATE) để tuần tự hoá các request start/submit bài thi đồng thời. */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select u from User u where u.id = :id")

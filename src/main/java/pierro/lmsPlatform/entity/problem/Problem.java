@@ -4,7 +4,9 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import pierro.lmsPlatform.entity.auth.UserGroup;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -37,6 +39,23 @@ public class Problem {
 
     @Column(name = "is_published", nullable = false)
     private boolean published;
+
+    @Column(name = "start_at")
+    private LocalDateTime startAt;          // null = mở ngay
+
+    private LocalDateTime deadline;         // null = không giới hạn
+
+    @Column(name = "allow_late")
+    private Boolean allowLate = false;      // dùng Boolean (nullable) để ddl-auto=update không lỗi với dữ liệu cũ
+
+    @Column(name = "max_attempts")
+    private Integer maxAttempts;            // null = không giới hạn
+
+    @ManyToMany
+    @JoinTable(name = "problem_groups",
+            joinColumns = @JoinColumn(name = "id_problem"),
+            inverseJoinColumns = @JoinColumn(name = "id_user_group"))
+    private Set<UserGroup> groups = new HashSet<>();
 
     @OneToMany(mappedBy = "problem", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Set<Submission> submissions = new HashSet<>();
