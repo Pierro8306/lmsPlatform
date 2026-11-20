@@ -4,6 +4,7 @@ import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import pierro.lmsPlatform.dto.request.Judge.LanguageConfig;
 import pierro.lmsPlatform.entity.problem.Verdict;
@@ -15,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -123,6 +125,78 @@ public class DockerSandbox {
             Thread.currentThread().interrupt();
         } catch (IOException e) {
             log.warn("Docker not available at startup: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Dọn định kỳ các zombie container (chết, thoát hoặc treo quá lâu) trong quá trình server hoạt động.
+     * Chạy mỗi 5 phút một lần (mặc định), có thể cấu hình qua app.judge.cleanup-interval-ms.
+     */
+    @Scheduled(initialDelay = 60_000, fixedDelayString = "${app.judge.cleanup-interval-ms:300000}")
+    public void scheduledCleanup() {
+        cleanupZombies();
+    }
+
+    void cleanupZombies() {
+        try {
+            List<String> toRemove = new ArrayList<>();
+
+            // 1. Dọn các container đã thoát hoặc chết (status=exited, status=dead)
+            for (String status : List.of("exited", "dead")) {
+                ProcessRunner.Result r = ProcessRunner.run(
+                        List.of("docker", "ps", "-aq",
+                                "--filter", "label=" + LABEL_KEY + "=" + safeInstanceId(),
+                                "--filter", "name=^judge_",
+                                "--filter", "status=" + status),
+                        10_000, MAX_MSG_BYTES, null);
+                if (!r.timedOut() && r.exitCode() == 0) {
+                    for (String s : r.stdout().lines().map(String::trim).filter(s -> !s.isEmpty()).toList()) {
+                        if (!toRemove.contains(s)) toRemove.add(s);
+                    }
+                }
+            }
+
+            // 2. Dọn các container đang chạy nhưng đã quá thời hạn tối đa (vd: treo > 3 phút)
+            ProcessRunner.Result rRunning = ProcessRunner.run(
+                    List.of("docker", "ps", "-q",
+                            "--filter", "label=" + LABEL_KEY + "=" + safeInstanceId(),
+                            "--filter", "name=^judge_",
+                            "--filter", "status=running"),
+                    10_000, MAX_MSG_BYTES, null);
+            if (!rRunning.timedOut() && rRunning.exitCode() == 0) {
+                List<String> runningIds = rRunning.stdout().lines().map(String::trim).filter(s -> !s.isEmpty()).toList();
+                for (String id : runningIds) {
+                    if (isContainerStale(id, 180)) {
+                        toRemove.add(id);
+                    }
+                }
+            }
+
+            if (!toRemove.isEmpty()) {
+                List<String> cmd = new ArrayList<>(List.of("docker", "rm", "-f"));
+                cmd.addAll(toRemove);
+                ProcessRunner.run(cmd, 30_000, MAX_MSG_BYTES, null);
+                log.info("Cleaned up {} zombie judge container(s)", toRemove.size());
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } catch (IOException e) {
+            log.debug("Docker not available during scheduled cleanup: {}", e.getMessage());
+        }
+    }
+
+    private boolean isContainerStale(String id, int maxAgeSeconds) {
+        try {
+            ProcessRunner.Result r = ProcessRunner.run(
+                    List.of("docker", "inspect", "-f", "{{.State.StartedAt}}", id),
+                    5_000, 256, null);
+            if (r.timedOut() || r.exitCode() != 0) return false;
+            String timeStr = r.stdout().trim();
+            if (timeStr.isEmpty()) return false;
+            Instant startedAt = Instant.parse(timeStr);
+            return Instant.now().minusSeconds(maxAgeSeconds).isAfter(startedAt);
+        } catch (Exception e) {
+            return false;
         }
     }
 

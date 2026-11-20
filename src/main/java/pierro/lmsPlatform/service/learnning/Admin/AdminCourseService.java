@@ -1,21 +1,25 @@
 package pierro.lmsPlatform.service.learnning.Admin;
-import pierro.lmsPlatform.security.exception.ConflictException;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import pierro.lmsPlatform.dto.request.Learning.CreateCourseDto;
 import pierro.lmsPlatform.dto.request.Learning.CreateLessonDto;
 import pierro.lmsPlatform.dto.response.Learning.AdminLessonSummaryDto;
 import pierro.lmsPlatform.dto.response.Learning.CourseSummaryDto;
 import pierro.lmsPlatform.dto.response.Learning.LessonDetailDto;
+import pierro.lmsPlatform.entity.auth.UserGroup;
 import pierro.lmsPlatform.entity.learning.Course;
 import pierro.lmsPlatform.entity.learning.Lesson;
 import pierro.lmsPlatform.mapper.CourseMapper;
 import pierro.lmsPlatform.mapper.LessonMapper;
+import pierro.lmsPlatform.repository.auth.UserGroupRepository;
 import pierro.lmsPlatform.repository.learning.CourseRepository;
+import pierro.lmsPlatform.repository.learning.LessonProgressRepository;
 import pierro.lmsPlatform.repository.learning.LessonRepository;
 import pierro.lmsPlatform.security.crypto.IdObfuscator;
+import pierro.lmsPlatform.security.exception.ConflictException;
 import pierro.lmsPlatform.security.exception.ResourceNotFoundException;
 
 import java.util.List;
@@ -25,24 +29,30 @@ import java.util.List;
 public class AdminCourseService {
     private final CourseRepository courseRepository;
     private final LessonRepository lessonRepository;
+    private final UserGroupRepository userGroupRepository;
+    private final LessonProgressRepository lessonProgressRepository;
     private final CourseMapper courseMapper;
     private final LessonMapper lessonMapper;
     private final IdObfuscator idObfuscator;
 
     @Transactional
     public CourseSummaryDto createCourse(CreateCourseDto dto) {
-        Course saved = courseRepository.save(courseMapper.toEntity(dto));
+        Course course = courseMapper.toEntity(dto);
+        course.setUserGroup(findGroup(dto.getUserGroup()));
+        Course saved = courseRepository.save(course);
         return courseMapper.toSummary(saved);
     }
 
     @Transactional(readOnly = true)
     public List<CourseSummaryDto> listCourses() {
-        return courseMapper.toSummaries(courseRepository.findAll());
+        return courseMapper.toSummaries(courseRepository.findAllByOrderByIdDesc());
     }
 
     @Transactional
     public void updateCourse(String courseIdH, CreateCourseDto dto) {
-        courseMapper.updateEntity(dto, findCourse(idObfuscator.decode(courseIdH)));
+        Course course = findCourse(idObfuscator.decode(courseIdH));
+        courseMapper.updateEntity(dto, course);
+        course.setUserGroup(findGroup(dto.getUserGroup()));
     }
 
     @Transactional
@@ -75,7 +85,10 @@ public class AdminCourseService {
 
     @Transactional
     public void deleteLesson(String lessonIdH) {
-        lessonRepository.delete(findLesson(idObfuscator.decode(lessonIdH)));
+        Long lessonId = idObfuscator.decode(lessonIdH);
+        findLesson(lessonId);
+        lessonProgressRepository.deleteByLesson_Id(lessonId);
+        lessonRepository.deleteById(lessonId);
     }
 
     @Transactional
@@ -118,5 +131,10 @@ public class AdminCourseService {
         return lessonRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài học"));
     }
-}
 
+    private UserGroup findGroup(String name) {
+        if (!StringUtils.hasText(name)) return null;
+        return userGroupRepository.findByName(name.trim())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy nhóm: " + name));
+    }
+}

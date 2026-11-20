@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import pierro.lmsPlatform.entity.auth.UserGroup;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -18,10 +19,20 @@ public class Project {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     private String title;
+
     private String description;
+
     private LocalDateTime deadline;
+
     private String status;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_user_group")
+    private UserGroup userGroup;
+
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<ProjectSubmission> projectSubmissions = new HashSet<>();
+
 }

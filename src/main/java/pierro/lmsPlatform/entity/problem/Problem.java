@@ -62,4 +62,5 @@ public class Problem {
 
     @OneToMany(mappedBy = "problem", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Set<TestCase> testCases = new HashSet<>();
+
 }

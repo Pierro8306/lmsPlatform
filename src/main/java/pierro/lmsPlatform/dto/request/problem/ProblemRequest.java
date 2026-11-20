@@ -27,5 +27,14 @@ public record ProblemRequest(@NotBlank
                              Boolean allowLate,
                              @Min(1)
                              Integer maxAttempts,
-                             List<String> groupIds) {
+                             List<String> groupIds,
+                             List<TestCaseItemRequest> testCases) {
+
+    public ProblemRequest(String title, String slug, String content, String difficulty,
+                          int timeLimitMs, int memoryLimitKb, boolean published,
+                          LocalDateTime startAt, LocalDateTime deadline, Boolean allowLate,
+                          Integer maxAttempts, List<String> groupIds) {
+        this(title, slug, content, difficulty, timeLimitMs, memoryLimitKb, published,
+                startAt, deadline, allowLate, maxAttempts, groupIds, null);
+    }
 }

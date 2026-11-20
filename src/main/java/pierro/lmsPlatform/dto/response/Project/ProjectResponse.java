@@ -11,4 +11,5 @@ public class ProjectResponse {
     private String title;
     private String description;
     private LocalDateTime deadline;
+    private String userGroup;
 }

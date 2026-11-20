@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import pierro.lmsPlatform.dto.request.Quiz.QuestionRequest;
+import pierro.lmsPlatform.dto.response.Quiz.ExtractQuestionsResponse;
 import pierro.lmsPlatform.security.exception.ApiException;
 import pierro.lmsPlatform.security.exception.BadRequestException;
 
@@ -47,7 +48,7 @@ public class QuizAiExtractorService {
     private final ChatClient chatClient;
     private final Validator validator;
 
-    public List<QuestionRequest> extractQuestions(MultipartFile file) {
+    public ExtractQuestionsResponse extractQuestions(MultipartFile file) {
         String pdfText = readPdfText(file);
         List<QuestionRequest> parsed = askAiToExtract(pdfText);
 
@@ -58,10 +59,11 @@ public class QuizAiExtractorService {
         if (valid.isEmpty()) {
             throw new BadRequestException("Không trích xuất được câu hỏi hợp lệ nào từ file");
         }
-        if (valid.size() < parsed.size()) {
-            log.warn("Bỏ {} câu hỏi không hợp lệ khi trích xuất PDF", parsed.size() - valid.size());
+        int dropped = parsed.size() - valid.size();
+        if (dropped > 0) {
+            log.warn("Bỏ {} câu hỏi không hợp lệ khi trích xuất PDF", dropped);
         }
-        return valid;
+        return new ExtractQuestionsResponse(valid, dropped);
     }
 
     private String readPdfText(MultipartFile file) {

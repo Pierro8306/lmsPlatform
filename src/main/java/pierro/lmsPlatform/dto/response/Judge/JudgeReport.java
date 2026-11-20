@@ -13,7 +13,12 @@ public record JudgeReport(
         String message,
         List<TestResult> results) {
 
-    public record TestResult(long testCaseId, Verdict verdict, int timeMs, int memoryKb, String message) {}
+    public record TestResult(
+            long id,
+            Verdict verdict,
+            int timeMs,
+            int memoryKb,
+            String message) {}
 
     public static JudgeReport failure(Verdict verdict, String message) {
         return failure(verdict, message, 0);

@@ -8,4 +8,6 @@ import java.util.Optional;
 public interface UserGroupRepository extends JpaRepository<UserGroup,Long> {
 
     Optional<UserGroup> findByName(String name);
+    boolean existsByName(String name);
+    boolean existsByNameAndIdNot(String name, Long id);
 }

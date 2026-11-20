@@ -14,6 +14,7 @@ import pierro.lmsPlatform.security.exception.BadRequestException;
 import pierro.lmsPlatform.security.exception.ResourceNotFoundException;
 import pierro.lmsPlatform.security.exception.UnauthorizedException;
 import pierro.lmsPlatform.security.jwt.JwtService;
+import pierro.lmsPlatform.security.jwt.TokenBlacklistService;
 import pierro.lmsPlatform.security.rateLimit.LoginAttemptService;
 
 @Service
@@ -23,6 +24,7 @@ public class AuthenticationService {
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
     private final LoginAttemptService loginAttemptService;
+    private final TokenBlacklistService tokenBlacklistService;
 
     /** Hash giả để thời gian phản hồi giống nhau dù username có tồn tại hay không. */
     private String dummyHash;
@@ -49,9 +51,12 @@ public class AuthenticationService {
         return toLoginResponse(user);
     }
 
-    /** Đổi refresh token lấy cặp token mới. Refresh token chỉ hợp lệ khi còn đúng phiên bản trong DB. */
+    /** Đổi refresh token lấy cặp token mới. Refresh token chỉ hợp lệ khi còn đúng phiên bản trong DB và không nằm trong blacklist. */
     @Transactional(readOnly = true)
     public LoginResponse refresh(String refreshToken) {
+        if (tokenBlacklistService.isBlacklisted(refreshToken)) {
+            throw new UnauthorizedException("Phiên đăng nhập không hợp lệ hoặc đã hết hạn");
+        }
         JwtService.TokenInfo info = jwtService.parse(refreshToken, JwtService.TokenType.REFRESH)
                 .orElseThrow(() -> new UnauthorizedException("Phiên đăng nhập không hợp lệ hoặc đã hết hạn"));
         User user = userRepository.findWithRoleAndGroupById(info.userId())
@@ -60,9 +65,36 @@ public class AuthenticationService {
         return toLoginResponse(user);
     }
 
-    /** Đăng xuất: vô hiệu hoá mọi access + refresh token đã cấp cho user (trên mọi thiết bị). */
+    /**
+     * Đăng xuất trên thiết bị hiện tại: đưa token (access và/hoặc refresh) vào blacklist.
+     * Không tăng tokenVersion để các thiết bị khác không bị văng.
+     */
+    public void logout(Long userId, String accessToken, String refreshToken) {
+        if (accessToken != null && !accessToken.isBlank()) {
+            tokenBlacklistService.blacklistToken(accessToken);
+        }
+        if (refreshToken != null && !refreshToken.isBlank()) {
+            tokenBlacklistService.blacklistToken(refreshToken);
+        }
+    }
+
+    public void logout(Long userId, String accessToken) {
+        logout(userId, accessToken, null);
+    }
+
+    /**
+     * Giữ lại hàm logout(userId) để tương thích ngược. Mặc định kích hoạt đăng xuất tất cả thiết bị.
+     */
     @Transactional
     public void logout(Long userId) {
+        logoutAll(userId);
+    }
+
+    /**
+     * Buộc đăng xuất trên tất cả mọi thiết bị (tăng tokenVersion trong DB).
+     */
+    @Transactional
+    public void logoutAll(Long userId) {
         userRepository.findById(userId).ifPresent(this::revokeTokens);
     }
 

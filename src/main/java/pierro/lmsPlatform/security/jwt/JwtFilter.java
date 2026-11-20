@@ -23,6 +23,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final UserRepository userRepository;
+    private final TokenBlacklistService tokenBlacklistService;
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
@@ -33,9 +34,15 @@ public class JwtFilter extends OncePerRequestFilter {
         if (header != null && header.startsWith("Bearer ")
                 && SecurityContextHolder.getContext().getAuthentication() == null) {
 
-            jwtService.parse(header.substring(7).trim(), JwtService.TokenType.ACCESS).ifPresent(info ->
+            String token = header.substring(7).trim();
+            if (tokenBlacklistService.isBlacklisted(token)) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+
+            jwtService.parse(token, JwtService.TokenType.ACCESS).ifPresent(info ->
                     // Role + phiên bản lấy từ DB: user bị xoá => hết quyền; đổi role có hiệu lực ngay;
-                    // đăng xuất / đổi mật khẩu (tăng tokenVersion) => token cũ bị từ chối ngay.
+                    // đăng xuất tất cả / đổi mật khẩu (tăng tokenVersion) => token cũ bị từ chối ngay.
                     userRepository.findAuthInfoById(info.userId())
                             .filter(auth -> auth.getTokenVersion() == info.version())
                             .ifPresent(auth -> SecurityContextHolder.getContext().setAuthentication(

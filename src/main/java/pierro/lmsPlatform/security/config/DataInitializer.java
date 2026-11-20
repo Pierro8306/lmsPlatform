@@ -33,7 +33,7 @@ public class DataInitializer {
     @Value("${APP_SEED_ADMIN_PASSWORD:}")
     private String adminPassword;
 
-    @Value("${APP_SEED_ADMIN_PASSWORD:}")
+    @Value("${APP_SEED_STUDENT_PASSWORD:}")
     private String studentPassword;
 
     @Bean
@@ -61,7 +61,7 @@ public class DataInitializer {
     }
 
     private void seedUser(String username, String email, String rawPassword, Role role) {
-        if (rawPassword == null || rawPassword.isBlank()) return;          // không cấu hình => không tạo
+        if (rawPassword == null || rawPassword.isBlank()) return;
         if (userRepository.existsByUsername(username)) return;
         if (rawPassword.length() < MIN_SEED_PASSWORD_LENGTH) {
             log.warn("Bỏ qua tạo tài khoản '{}': mật khẩu seed phải từ {} ký tự", username, MIN_SEED_PASSWORD_LENGTH);

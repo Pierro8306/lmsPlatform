@@ -33,7 +33,7 @@ public record LanguageConfig(
 
     private static final LanguageConfig JAVA = new LanguageConfig(
             "java", "eclipse-temurin:21-jdk", "Main.java",
-            "javac -d /app /app/Main.java",
+            "javac -d /app /app/Main.java; rc=$?; chmod -R a+rwX /app; exit $rc",
             "java -Xmx{MEM_MB}m -Xss64m -XX:+UseSerialGC -XX:-UsePerfData -cp /app Main", 160, 128);
 
     private static final Map<String, LanguageConfig> REGISTRY = Map.of(

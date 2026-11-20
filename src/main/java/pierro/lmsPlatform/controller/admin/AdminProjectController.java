@@ -20,10 +20,27 @@ public class AdminProjectController {
         return ResponseObject.ok("Lấy danh sách bài tập dự án thành công", projectService.listProjects());
     }
 
+    @GetMapping("/{projectId}")
+    public ResponseEntity<ResponseObject> getProject(@PathVariable String projectId) {
+        return ResponseObject.ok("Lấy chi tiết bài tập dự án thành công", projectService.getProject(projectId));
+    }
+
     /** Trả về bài tập vừa tạo (có id mã hoá để student nộp bài, admin chấm bài). */
     @PostMapping
     public ResponseEntity<ResponseObject> createProject(@Valid @RequestBody ProjectDto projectDto) {
         return ResponseObject.ok("Tạo bài tập dự án thành công", projectService.createProject(projectDto));
+    }
+
+    @PutMapping("/{projectId}")
+    public ResponseEntity<ResponseObject> updateProject(@PathVariable String projectId,
+                                                        @Valid @RequestBody ProjectDto projectDto) {
+        return ResponseObject.ok("Cập nhật bài tập dự án thành công", projectService.updateProject(projectId, projectDto));
+    }
+
+    @DeleteMapping("/{projectId}")
+    public ResponseEntity<ResponseObject> deleteProject(@PathVariable String projectId) {
+        projectService.deleteProject(projectId);
+        return ResponseObject.ok("Xoá bài tập dự án thành công");
     }
 
     @GetMapping("/{projectId}/submissions")

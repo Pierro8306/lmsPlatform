@@ -1,5 +1,7 @@
 package pierro.lmsPlatform.security.exception;
 
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -7,6 +9,7 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -14,6 +17,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import pierro.lmsPlatform.dto.response.ResponseObject;
 
@@ -41,12 +45,35 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, msg.isBlank() ? "Dữ liệu không hợp lệ" : msg);
     }
 
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ResponseObject> handleConstraintViolation(ConstraintViolationException ex) {
+        String msg = ex.getConstraintViolations().stream()
+                .map(ConstraintViolation::getMessage)
+                .collect(Collectors.joining("; "));
+        return build(HttpStatus.BAD_REQUEST, msg.isBlank() ? "Dữ liệu không hợp lệ" : msg);
+    }
+
     @ExceptionHandler({HttpMessageNotReadableException.class,
             MissingServletRequestParameterException.class,
-            MethodArgumentTypeMismatchException.class})
+            MissingServletRequestPartException.class,
+            MethodArgumentTypeMismatchException.class,
+            IllegalArgumentException.class})
     public ResponseEntity<ResponseObject> handleBadInput(Exception ex) {
         log.debug("Bad input", ex);
-        return build(HttpStatus.BAD_REQUEST, "Dữ liệu gửi lên không đúng định dạng");
+        String msg;
+        if (ex instanceof IllegalArgumentException && ex.getMessage() != null && !ex.getMessage().isBlank()) {
+            msg = ex.getMessage();
+        } else if (ex instanceof MissingServletRequestPartException) {
+            msg = "Thiếu phần dữ liệu hoặc file đính kèm yêu cầu";
+        } else {
+            msg = "Dữ liệu gửi lên không đúng định dạng";
+        }
+        return build(HttpStatus.BAD_REQUEST, msg);
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<ResponseObject> handleMediaTypeNotSupported(HttpMediaTypeNotSupportedException ex) {
+        return build(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "Định dạng dữ liệu không được hỗ trợ");
     }
 
     @ExceptionHandler(AccessDeniedException.class)

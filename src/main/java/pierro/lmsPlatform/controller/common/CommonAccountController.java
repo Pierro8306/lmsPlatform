@@ -2,13 +2,12 @@ package pierro.lmsPlatform.controller.common;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import pierro.lmsPlatform.dto.request.Auth.ChangePasswordRequest;
+import pierro.lmsPlatform.dto.request.Auth.LogoutRequest;
 import pierro.lmsPlatform.dto.response.ResponseObject;
 import pierro.lmsPlatform.service.auth.AuthenticationService;
 
@@ -20,14 +19,35 @@ public class CommonAccountController {
 
     @PostMapping("/change-password")
     public ResponseEntity<ResponseObject> changePassword(@AuthenticationPrincipal Long userId,
-                                                       @Valid @RequestBody ChangePasswordRequest request) {
+                                                        @Valid @RequestBody ChangePasswordRequest request) {
         // Trả về cặp token mới: các thiết bị khác bị đăng xuất, phiên hiện tại vẫn dùng tiếp được
         return ResponseObject.ok("Đổi mật khẩu thành công", authService.changePassword(userId, request));
     }
 
+    /**
+     * Đăng xuất trên thiết bị hiện tại (đưa Access Token và Refresh Token nếu có vào Blacklist).
+     */
     @PostMapping("/logout")
-    public ResponseEntity<ResponseObject> logout(@AuthenticationPrincipal Long userId) {
-        authService.logout(userId);
+    public ResponseEntity<ResponseObject> logout(
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
+            @RequestBody(required = false) LogoutRequest request,
+            @AuthenticationPrincipal Long userId) {
+
+        String accessToken = (authHeader != null && authHeader.startsWith("Bearer "))
+                ? authHeader.substring(7).trim()
+                : null;
+        String refreshToken = request != null ? request.getRefreshToken() : null;
+
+        authService.logout(userId, accessToken, refreshToken);
         return ResponseObject.ok("Đăng xuất thành công");
+    }
+
+    /**
+     * Buộc đăng xuất trên tất cả các thiết bị đang đăng nhập.
+     */
+    @PostMapping("/logout-all")
+    public ResponseEntity<ResponseObject> logoutAll(@AuthenticationPrincipal Long userId) {
+        authService.logoutAll(userId);
+        return ResponseObject.ok("Đăng xuất tất cả thiết bị thành công");
     }
 }

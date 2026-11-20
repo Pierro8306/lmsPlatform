@@ -8,12 +8,34 @@ import pierro.lmsPlatform.dto.request.Communication.EventRequest;
 import pierro.lmsPlatform.dto.request.Communication.NotificationRequest;
 import pierro.lmsPlatform.dto.response.ResponseObject;
 import pierro.lmsPlatform.service.communication.Admin.AdminCommunicationService;
+import pierro.lmsPlatform.service.communication.Student.CommunicationService;
 
 @RestController
 @RequestMapping("/api/admin/communications")
 @RequiredArgsConstructor
 public class AdminCommunicationController {
     private final AdminCommunicationService communicationService;
+    private final CommunicationService communicationReadService;
+
+    @GetMapping("/notifications")
+    public ResponseEntity<ResponseObject> getNotifications() {
+        return ResponseObject.ok("Lấy danh sách thông báo thành công", communicationReadService.getNotifications());
+    }
+
+    @GetMapping("/notifications/{notificationId}")
+    public ResponseEntity<ResponseObject> getNotificationById(@PathVariable String notificationId) {
+        return ResponseObject.ok("Lấy chi tiết thông báo thành công", communicationReadService.getNotificationById(notificationId));
+    }
+
+    @GetMapping("/events")
+    public ResponseEntity<ResponseObject> getEvents() {
+        return ResponseObject.ok("Lấy danh sách sự kiện thành công", communicationReadService.getEvents());
+    }
+
+    @GetMapping("/events/{eventId}")
+    public ResponseEntity<ResponseObject> getEventById(@PathVariable String eventId) {
+        return ResponseObject.ok("Lấy chi tiết sự kiện thành công", communicationReadService.getEventById(eventId));
+    }
 
     @PostMapping("/notifications")
     public ResponseEntity<ResponseObject> createNotification(@Valid @RequestBody NotificationRequest request) {
@@ -58,4 +80,3 @@ public class AdminCommunicationController {
         return ResponseObject.ok("Lấy danh sách thành viên tham gia sự kiện thành công", communicationService.getMembersByEvent(eventId));
     }
 }
-

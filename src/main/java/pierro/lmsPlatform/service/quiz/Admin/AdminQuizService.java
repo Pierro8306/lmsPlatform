@@ -154,7 +154,7 @@ public class AdminQuizService {
             return new AdminAttemptResponse(
                     idObfuscator.encode(a.getId()),
                     a.getUser().getUsername(),
-                    a.getStatus().name(),
+                    a.getStatus() != null ? a.getStatus().name() : null,
                     points,
                     total,
                     QuizHelper.percentage(points, total),

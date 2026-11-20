@@ -1,15 +1,16 @@
-package pierro.lmsPlatform.controller.admin.problem;
+package pierro.lmsPlatform.controller.admin;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
+import pierro.lmsPlatform.dto.request.problem.ProblemRequest;
+import pierro.lmsPlatform.dto.request.problem.TestCaseItemRequest;
+import pierro.lmsPlatform.dto.request.problem.TestCaseRequest;
 import pierro.lmsPlatform.dto.response.ResponseObject;
 import pierro.lmsPlatform.service.problem.AdminProblemService;
-import pierro.lmsPlatform.dto.request.problem.ProblemRequest;
-import pierro.lmsPlatform.dto.request.problem.TestCaseRequest;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin/problems")
@@ -81,6 +82,18 @@ public class AdminProblemController {
         );
     }
 
+    // Thay thế/đồng bộ toàn bộ test case (xóa test case thừa mồ côi)
+    @PutMapping("/{id}/tests")
+    public ResponseEntity<ResponseObject> replaceTests(
+            @PathVariable String id,
+            @Valid @RequestBody List<TestCaseItemRequest> requests
+    ) {
+        return ResponseObject.ok(
+                "Đồng bộ test case thành công",
+                service.replaceTests(id, requests)
+        );
+    }
+
     // Thêm test case
     @PostMapping("/{id}/tests")
     public ResponseEntity<ResponseObject> addTest(
@@ -117,4 +130,26 @@ public class AdminProblemController {
         return ResponseObject.ok("Xoá test case thành công");
     }
 
+    // Lấy danh sách lịch sử nộp bài của sinh viên cho bài tập (ADMIN)
+    @GetMapping("/{id}/submissions")
+    public ResponseEntity<ResponseObject> listSubmissions(
+            @PathVariable String id
+    ) {
+        return ResponseObject.ok(
+                "Lấy danh sách bài nộp thành công",
+                service.listSubmissions(id)
+        );
+    }
+
+    // Lấy chi tiết một bài nộp (ADMIN)
+    @GetMapping("/{id}/submissions/{submissionId}")
+    public ResponseEntity<ResponseObject> getSubmissionDetail(
+            @PathVariable String id,
+            @PathVariable String submissionId
+    ) {
+        return ResponseObject.ok(
+                "Lấy chi tiết bài nộp thành công",
+                service.getSubmissionDetail(id, submissionId)
+        );
+    }
 }

@@ -14,4 +14,7 @@ public class UpdateProfileRequest {
     @NotBlank(message = "Email không được để trống")
     @Email(message = "Email không hợp lệ")
     private String email;
+
+    /** Mật khẩu hiện tại (bắt buộc khi muốn thay đổi email). */
+    private String currentPassword;
 }

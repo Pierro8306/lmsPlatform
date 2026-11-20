@@ -13,7 +13,23 @@ public record StudentProblemDetail(String id,
                                    LocalDateTime deadline,
                                    boolean open,
                                    Integer maxAttempts,
+                                   Integer attemptsUsed,
                                    List<SampleTest> samples) {
+
+    public StudentProblemDetail(String id,
+                                String title,
+                                String content,
+                                String difficulty,
+                                int timeLimitMs,
+                                int memoryLimitKb,
+                                LocalDateTime startAt,
+                                LocalDateTime deadline,
+                                boolean open,
+                                Integer maxAttempts,
+                                List<SampleTest> samples) {
+        this(id, title, content, difficulty, timeLimitMs, memoryLimitKb, startAt, deadline, open, maxAttempts, 0, samples);
+    }
+
     public record SampleTest(  // dùng để cho học sinh xem đc 2 trường input và output
             String input,
             String expectedOutput

@@ -3,13 +3,16 @@ import java.util.Locale;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import pierro.lmsPlatform.dto.request.Auth.UpdateProfileRequest;
 import pierro.lmsPlatform.dto.response.UserResponseDto;
 import pierro.lmsPlatform.entity.auth.User;
 import pierro.lmsPlatform.repository.auth.UserRepository;
 import pierro.lmsPlatform.security.crypto.IdObfuscator;
+import pierro.lmsPlatform.security.exception.BadRequestException;
 import pierro.lmsPlatform.security.exception.ConflictException;
 import pierro.lmsPlatform.security.exception.ResourceNotFoundException;
 
@@ -17,6 +20,7 @@ import pierro.lmsPlatform.security.exception.ResourceNotFoundException;
 @RequiredArgsConstructor
 public class ProfileService {
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
     private final IdObfuscator idObfuscator;
 
     @Transactional(readOnly = true)
@@ -29,6 +33,16 @@ public class ProfileService {
         User user = findUser(userId);
         String username = req.getUsername().trim();
         String email = req.getEmail().trim().toLowerCase(Locale.ROOT);
+
+        boolean emailChanged = !user.getEmail().equalsIgnoreCase(email);
+        if (emailChanged) {
+            if (!StringUtils.hasText(req.getCurrentPassword())) {
+                throw new BadRequestException("Cần nhập mật khẩu hiện tại để đổi email");
+            }
+            if (!passwordEncoder.matches(req.getCurrentPassword(), user.getPassword())) {
+                throw new BadRequestException("Mật khẩu hiện tại không chính xác");
+            }
+        }
 
         if (userRepository.existsByUsernameAndIdNot(username, userId)) {
             throw new ConflictException("Username đã tồn tại");
@@ -60,4 +74,3 @@ public class ProfileService {
                 u.getEmail());
     }
 }
-

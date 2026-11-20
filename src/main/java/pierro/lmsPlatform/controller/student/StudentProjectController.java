@@ -16,25 +16,26 @@ public class StudentProjectController {
     private final ProjectSubmissionService projectService;
 
     @GetMapping
-    public ResponseEntity<ResponseObject> listProjects() {
-        return ResponseObject.ok("Lấy danh sách bài tập dự án thành công", projectService.listProjects());
+    public ResponseEntity<ResponseObject> listProjects(@AuthenticationPrincipal Long userId) {
+        return ResponseObject.ok("Lấy danh sách bài tập dự án thành công", projectService.listProjects(userId));
     }
 
     @GetMapping("/{projectId}")
-    public ResponseEntity<ResponseObject> getProject(@PathVariable String projectId) {
-        return ResponseObject.ok("Lấy chi tiết bài tập dự án thành công", projectService.getProject(projectId));
+    public ResponseEntity<ResponseObject> getProject(@PathVariable String projectId,
+                                                     @AuthenticationPrincipal Long userId) {
+        return ResponseObject.ok("Lấy chi tiết bài tập dự án thành công", projectService.getProject(projectId, userId));
     }
 
     @PostMapping("/submit")
     public ResponseEntity<ResponseObject> submitProject(@AuthenticationPrincipal Long userId,
-                                                     @Valid @RequestBody ProjectSubmitRequest request) {
+                                                        @Valid @RequestBody ProjectSubmitRequest request) {
         projectService.submit(userId, request);
         return ResponseObject.ok("Nộp bài thành công");
     }
 
     @GetMapping("/{projectId}/submissions/me")
     public ResponseEntity<ResponseObject> getMySubmission(@PathVariable String projectId,
-                                                       @AuthenticationPrincipal Long userId) {
+                                                          @AuthenticationPrincipal Long userId) {
         return ResponseObject.ok("Lấy bài nộp của tôi thành công",
                 projectService.getMySubmission(projectId, userId));
     }

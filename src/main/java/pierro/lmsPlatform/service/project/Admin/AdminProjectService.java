@@ -3,15 +3,18 @@ package pierro.lmsPlatform.service.project.Admin;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import pierro.lmsPlatform.dto.request.Project.GradeSubmissionRequest;
 import pierro.lmsPlatform.dto.request.Project.ProjectDto;
 import pierro.lmsPlatform.dto.response.Project.ProjectResponse;
 import pierro.lmsPlatform.dto.response.Project.SubmissionDto;
+import pierro.lmsPlatform.entity.auth.UserGroup;
 import pierro.lmsPlatform.entity.project.Project;
 import pierro.lmsPlatform.entity.project.ProjectSubmission;
 import pierro.lmsPlatform.entity.project.SubmissionStatus;
 import pierro.lmsPlatform.mapper.ProjectMapper;
 import pierro.lmsPlatform.mapper.SubmissionMapper;
+import pierro.lmsPlatform.repository.auth.UserGroupRepository;
 import pierro.lmsPlatform.repository.project.ProjectRepository;
 import pierro.lmsPlatform.repository.project.ProjectSubmissionRepository;
 import pierro.lmsPlatform.security.crypto.IdObfuscator;
@@ -24,6 +27,7 @@ import java.util.List;
 public class AdminProjectService {
     private final ProjectRepository projectRepository;
     private final ProjectSubmissionRepository submissionRepository;
+    private final UserGroupRepository userGroupRepository;
     private final SubmissionMapper submissionMapper;
     private final ProjectMapper projectMapper;
     private final IdObfuscator idObfuscator;
@@ -34,12 +38,41 @@ public class AdminProjectService {
         project.setTitle(dto.getTitle().trim());
         project.setDescription(dto.getDescription() == null ? null : dto.getDescription().trim());
         project.setDeadline(dto.getDeadline());
+        project.setUserGroup(findGroup(dto.getUserGroup()));
         return projectMapper.toResponse(projectRepository.save(project));
     }
 
     @Transactional(readOnly = true)
     public List<ProjectResponse> listProjects() {
         return projectMapper.toResponses(projectRepository.findAllByOrderByDeadlineDesc());
+    }
+
+    @Transactional(readOnly = true)
+    public ProjectResponse getProject(String projectIdH) {
+        Long projectId = idObfuscator.decode(projectIdH);
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài tập dự án"));
+        return projectMapper.toResponse(project);
+    }
+
+    @Transactional
+    public ProjectResponse updateProject(String projectIdH, ProjectDto dto) {
+        Long projectId = idObfuscator.decode(projectIdH);
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài tập dự án"));
+        project.setTitle(dto.getTitle().trim());
+        project.setDescription(dto.getDescription() == null ? null : dto.getDescription().trim());
+        project.setDeadline(dto.getDeadline());
+        project.setUserGroup(findGroup(dto.getUserGroup()));
+        return projectMapper.toResponse(project);
+    }
+
+    @Transactional
+    public void deleteProject(String projectIdH) {
+        Long projectId = idObfuscator.decode(projectIdH);
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài tập dự án"));
+        projectRepository.delete(project);
     }
 
     @Transactional(readOnly = true)
@@ -61,5 +94,11 @@ public class AdminProjectService {
         submission.setScore(request.getScore());
         submission.setFeedback(request.getFeedback() == null ? null : request.getFeedback().trim());
         submission.setStatus(SubmissionStatus.GRADED);
+    }
+
+    private UserGroup findGroup(String name) {
+        if (!StringUtils.hasText(name)) return null;
+        return userGroupRepository.findByName(name.trim())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy nhóm: " + name));
     }
 }

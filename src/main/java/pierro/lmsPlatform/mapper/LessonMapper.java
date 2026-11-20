@@ -11,6 +11,8 @@ import java.util.List;
 
 @Mapper(componentModel = "spring", uses = IdMapper.class)
 public interface LessonMapper {
+    @Mapping(target = "completed", ignore = true)
+    @Mapping(target = "completedAt", ignore = true)
     LessonDetailDto entityToDTO(Lesson lesson);
 
     List<LessonDetailDto> entityToDTO(List<Lesson> lessons);

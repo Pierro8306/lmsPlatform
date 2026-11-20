@@ -22,6 +22,9 @@ public class Attempt {
     @Column(name = "id")
     private Long id;
 
+    @Version
+    private Long version;
+
     /** Thời điểm SERVER ghi nhận lúc bắt đầu làm bài (không tin client). */
     private LocalDateTime startedAt;
 

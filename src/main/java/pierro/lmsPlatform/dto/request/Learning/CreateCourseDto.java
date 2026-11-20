@@ -12,4 +12,7 @@ public class CreateCourseDto {
 
     @Size(max = 255, message = "Mô tả tối đa 255 ký tự")
     private String description;
+
+    /** Tên nhóm được phép học. Để trống = công khai cho tất cả. */
+    private String userGroup;
 }

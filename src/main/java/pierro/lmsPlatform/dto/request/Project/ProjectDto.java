@@ -20,4 +20,7 @@ public class ProjectDto {
     @NotNull(message = "Hạn nộp không được để trống")
     @Future(message = "Hạn nộp phải ở tương lai")
     private LocalDateTime deadline;
+
+    /** Tên nhóm được giao bài tập dự án. Để trống = áp dụng cho tất cả. */
+    private String userGroup;
 }
