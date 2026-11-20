@@ -19,6 +19,8 @@ import pierro.lmsPlatform.repository.learning.LessonRepository;
 import pierro.lmsPlatform.security.crypto.IdObfuscator;
 import pierro.lmsPlatform.security.exception.ForbiddenException;
 import pierro.lmsPlatform.security.exception.ResourceNotFoundException;
+import pierro.lmsPlatform.service.learnning.CloudStorageService;
+import pierro.lmsPlatform.service.learnning.StorageUrlResolver;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -31,8 +33,8 @@ public class CourseService {
     private final UserRepository userRepository;
     private final LessonProgressRepository lessonProgressRepository;
     private final CourseMapper courseMapper;
-    private final LessonMapper lessonMapper;
     private final IdObfuscator idObfuscator;
+    private final StorageUrlResolver storageUrlResolver;
 
     // Lấy danh sách khóa học cho sinh viên (lọc theo nhóm và tính tiến độ)
     @Transactional(readOnly = true)
@@ -80,26 +82,22 @@ public class CourseService {
         if (userId != null) {
             assertCanAccess(course, findUser(userId));
         }
-
         Set<Long> completedIds = userId == null ? Set.of()
                 : new HashSet<>(lessonProgressRepository.findCompletedLessonIdsByUserIdAndCourseId(userId, course.getId()));
-
         List<LessonDetailDto> lessons = course.getLessons().stream()
                 .sorted(Comparator.comparing(Lesson::getId))
                 .map(l -> LessonDetailDto.builder()
                         .id(idObfuscator.encode(l.getId()))
                         .title(l.getTitle())
                         .content(l.getContent())
-                        .video_url(l.getVideo_url())
-                        .attachment_urls(l.getAttachment_urls())
+                        .video_url(storageUrlResolver.resolve(l.getVideo_url()))              // <-- Đã resolve URL đầy đủ
+                        .attachment_urls(storageUrlResolver.resolveList(l.getAttachment_urls())) // <-- Đã resolve URLs tệp đính kèm
                         .completed(completedIds.contains(l.getId()))
                         .build())
                 .toList();
-
         int total = lessons.size();
         int completed = (int) lessons.stream().filter(LessonDetailDto::isCompleted).count();
         double pct = total == 0 ? 0.0 : Math.round(completed * 10000.0 / total) / 100.0;
-
         return CourseDetailDto.builder()
                 .id(idObfuscator.encode(course.getId()))
                 .title(course.getTitle())
@@ -111,37 +109,38 @@ public class CourseService {
                 .lessons(lessons)
                 .build();
     }
-
+    // Hàm phụ gọi khi không truyền userId: chỉ việc gọi hàm chính
     @Transactional(readOnly = true)
     public CourseDetailDto seeCourseDetail(String courseIdH) {
         return seeCourseDetail(null, courseIdH);
     }
 
-    // Xem chi tiết một bài học
+    // Xem chi tiết một bài học (Hàm chính)
     @Transactional(readOnly = true)
     public LessonDetailDto seeLessonDetail(Long userId, String lessonIdH) {
         Lesson lesson = findLesson(idObfuscator.decode(lessonIdH));
-        if (userId != null && lesson.getCourse() != null) {
+        // Chặn nếu bài học chưa được đưa vào khóa học nào
+        if (lesson.getCourse() == null) {
+            throw new ResourceNotFoundException("Bài học chưa thuộc khóa học nào");
+        }
+        if (userId != null) {
             assertCanAccess(lesson.getCourse(), findUser(userId));
         }
-
         Optional<LessonProgress> lp = userId == null ? Optional.empty()
                 : lessonProgressRepository.findByUserIdAndLessonId(userId, lesson.getId());
-
         boolean isCompleted = lp.map(LessonProgress::isCompleted).orElse(false);
         LocalDateTime completedAt = lp.map(LessonProgress::getCompletedAt).orElse(null);
-
         return LessonDetailDto.builder()
                 .id(idObfuscator.encode(lesson.getId()))
                 .title(lesson.getTitle())
                 .content(lesson.getContent())
-                .video_url(lesson.getVideo_url())
-                .attachment_urls(lesson.getAttachment_urls())
+                .video_url(storageUrlResolver.resolve(lesson.getVideo_url()))              // <-- Đã resolve URL đầy đủ
+                .attachment_urls(storageUrlResolver.resolveList(lesson.getAttachment_urls())) // <-- Đã resolve URLs tệp đính kèm
                 .completed(isCompleted)
                 .completedAt(completedAt)
                 .build();
     }
-
+    // Hàm phụ gọi khi không truyền userId: chỉ việc gọi hàm chính
     @Transactional(readOnly = true)
     public LessonDetailDto seeLessonDetail(String lessonIdH) {
         return seeLessonDetail(null, lessonIdH);
@@ -170,7 +169,7 @@ public class CourseService {
 
     // Hủy đánh dấu hoàn thành bài học
     @Transactional
-    public void uncompleteLesson(Long userId, String lessonIdH) {
+    public void unCompleteLesson(Long userId, String lessonIdH) {
         Long lessonId = idObfuscator.decode(lessonIdH);
         lessonProgressRepository.findByUserIdAndLessonId(userId, lessonId)
                 .ifPresent(p -> {
@@ -209,4 +208,5 @@ public class CourseService {
         }
         return map;
     }
+
 }

@@ -40,7 +40,7 @@ public class StudentLearningController {
     @DeleteMapping("/lessons/{lessonId}/complete")
     public ResponseEntity<ResponseObject> uncompleteLesson(@AuthenticationPrincipal Long userId,
                                                            @PathVariable String lessonId) {
-        learningService.uncompleteLesson(userId, lessonId);
+        learningService.unCompleteLesson(userId, lessonId);
         return ResponseObject.ok("Hủy đánh dấu hoàn thành bài học thành công");
     }
 }

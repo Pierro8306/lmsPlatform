@@ -4,8 +4,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 import pierro.lmsPlatform.dto.request.Learning.CreateCourseDto;
 import pierro.lmsPlatform.dto.request.Learning.CreateLessonDto;
+import pierro.lmsPlatform.dto.request.Learning.UploadedFileDto;
 import pierro.lmsPlatform.dto.response.Learning.AdminLessonSummaryDto;
 import pierro.lmsPlatform.dto.response.Learning.CourseSummaryDto;
 import pierro.lmsPlatform.dto.response.Learning.LessonDetailDto;
@@ -21,7 +23,10 @@ import pierro.lmsPlatform.repository.learning.LessonRepository;
 import pierro.lmsPlatform.security.crypto.IdObfuscator;
 import pierro.lmsPlatform.security.exception.ConflictException;
 import pierro.lmsPlatform.security.exception.ResourceNotFoundException;
+import pierro.lmsPlatform.service.learnning.CloudStorageService;
+import pierro.lmsPlatform.service.learnning.StorageUrlResolver;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -31,6 +36,8 @@ public class AdminCourseService {
     private final LessonRepository lessonRepository;
     private final UserGroupRepository userGroupRepository;
     private final LessonProgressRepository lessonProgressRepository;
+    private final CloudStorageService cloudStorageService;
+    private final StorageUrlResolver storageUrlResolver;
     private final CourseMapper courseMapper;
     private final LessonMapper lessonMapper;
     private final IdObfuscator idObfuscator;
@@ -136,5 +143,50 @@ public class AdminCourseService {
         if (!StringUtils.hasText(name)) return null;
         return userGroupRepository.findByName(name.trim())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy nhóm: " + name));
+    }
+
+
+
+    // Lấy chi tiết bài học cho Admin (đã resolve URL):
+    @Transactional(readOnly = true)
+    public LessonDetailDto getLessonDetail(String lessonIdH) {
+        Lesson lesson = findLesson(idObfuscator.decode(lessonIdH));
+        LessonDetailDto dto = lessonMapper.entityToDTO(lesson);
+        dto.setVideo_url(storageUrlResolver.resolve(lesson.getVideo_url()));
+        dto.setAttachment_urls(storageUrlResolver.resolveList(lesson.getAttachment_urls()));
+        return dto;
+    }
+
+    // Upload video cho bài học:
+    @Transactional
+    public UploadedFileDto uploadLessonVideo(String lessonIdH, MultipartFile file) {
+        Lesson lesson = findLesson(idObfuscator.decode(lessonIdH));
+        CloudStorageService.StoredObject stored = cloudStorageService.upload(file, CloudStorageService.Kind.VIDEO);
+        lesson.setVideo_url(stored.key());
+        String publicUrl = storageUrlResolver.resolve(stored.key());
+        return new UploadedFileDto(stored.key(), publicUrl, stored.contentType(), stored.size());
+    }
+
+    // Upload tài liệu đính kèm cho bài học:
+    @Transactional
+    public List<UploadedFileDto> uploadLessonAttachments(String lessonIdH, List<MultipartFile> files) {
+        Lesson lesson = findLesson(idObfuscator.decode(lessonIdH));
+        List<UploadedFileDto> results = new ArrayList<>();
+        List<String> newKeys = new ArrayList<>();
+
+        for (MultipartFile file : files) {
+            CloudStorageService.StoredObject stored = cloudStorageService.upload(file, CloudStorageService.Kind.ATTACHMENT);
+            newKeys.add(stored.key());
+            results.add(new UploadedFileDto(stored.key(), storageUrlResolver.resolve(stored.key()), stored.contentType(), stored.size()));
+        }
+
+        String currentUrls = lesson.getAttachment_urls();
+        String joinedNew = String.join("\n", newKeys);
+        if (StringUtils.hasText(currentUrls)) {
+            lesson.setAttachment_urls(currentUrls.trim() + "\n" + joinedNew);
+        } else {
+            lesson.setAttachment_urls(joinedNew);
+        }
+        return results;
     }
 }
