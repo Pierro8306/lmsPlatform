@@ -24,6 +24,6 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     restart: "no"
     command: >
-      sh -c "docker pull openjdk:17-alpine && 
-             docker pull python:3.9-alpine && 
-             docker pull gcc:alpine"
+      sh -c "docker pull eclipse-temurin:21-jdk &&
+             docker pull python:3.9-alpine &&
+             docker pull gcc:14"
