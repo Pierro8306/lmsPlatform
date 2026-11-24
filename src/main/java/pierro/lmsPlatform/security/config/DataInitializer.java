@@ -33,7 +33,7 @@ public class DataInitializer {
     @Value("${APP_SEED_ADMIN_PASSWORD:}")
     private String adminPassword;
 
-    @Value("${APP_SEED_STUDENT_PASSWORD:}")
+    @Value("${APP_SEED_ADMIN_PASSWORD:}")
     private String studentPassword;
 
     @Bean
