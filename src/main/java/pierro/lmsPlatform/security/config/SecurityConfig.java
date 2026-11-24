@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+import jakarta.servlet.DispatcherType;
+
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
@@ -43,6 +45,7 @@ public class SecurityConfig {
                         .accessDeniedHandler((req, res, ex) ->
                                 writeError(res, HttpServletResponse.SC_FORBIDDEN, "Bạn không có quyền truy cập")))
                 .authorizeHttpRequests(auth -> auth
+                        .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()              
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/student/**").hasRole("STUDENT")
