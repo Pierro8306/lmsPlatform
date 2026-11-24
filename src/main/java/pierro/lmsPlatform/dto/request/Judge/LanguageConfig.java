@@ -22,12 +22,12 @@ public record LanguageConfig(
         int pidsLimit) {
 
     private static final LanguageConfig CPP = new LanguageConfig(
-            "cpp", "gcc:13", "main.cpp",
+            "cpp", "gcc:14", "main.cpp",
             "g++ -O2 -std=c++17 -o /app/main.out /app/main.cpp",
             "/app/main.out", 16, 64);
 
     private static final LanguageConfig PYTHON = new LanguageConfig(
-            "python", "python:3.12-slim", "main.py",
+            "python", "python:3.9-alpine", "main.py",
             null,
             "python3 /app/main.py", 16, 64);
 
